@@ -3,7 +3,6 @@
     "description": "Two phase migrations for Doctrine ORM: before and after deploying new codebase version",
     "license": ["MIT"],
     "require": {
-        "php": "8.0.*",
         "nette/finder": "^2.5",
         "doctrine/orm": "^2.10",
         "symfony/console": "^5.3"
@@ -30,6 +29,15 @@
         }
     },
     "scripts": {
-        "check": "ec src && phpcs && phpstan analyse -vvv && phpunit -vvv tests"
+        "check": [
+            "@check:ec",
+            "@check:cs",
+            "@check:types",
+            "@check:tests"
+        ],
+        "check:ec": "ec src",
+        "check:cs": "phpcs",
+        "check:types": "phpstan analyse -vvv",
+        "check:tests": "phpunit -vvv tests"
     }
 }
