@@ -3,9 +3,9 @@
     "description": "Two phase migrations for Doctrine ORM: before and after deploying new codebase version",
     "license": ["MIT"],
     "require": {
-        "nette/finder": "^2.5",
-        "doctrine/orm": "^2.10",
-        "symfony/console": "^5.3"
+        "nette/finder": ">=2.5.3",
+        "doctrine/orm": ">=2.7.0",
+        "symfony/console": ">=5.0.0"
     },
     "require-dev": {
         "editorconfig-checker/editorconfig-checker": "^10.2.3",

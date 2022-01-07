@@ -19,7 +19,7 @@ class MigrationGenerateCommand extends Command
 
     public function __construct(
         EntityManagerInterface $entityManager,
-        MigrationService $migrationService,
+        MigrationService $migrationService
     )
     {
         parent::__construct();
