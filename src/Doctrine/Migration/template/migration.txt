@@ -1,0 +1,20 @@
+<?php declare(strict_types = 1);
+
+namespace %namespace%;
+
+use ShipMonk\Doctrine\Migration\Migration;
+use Doctrine\DBAL\Connection;
+
+class Migration%version% implements Migration
+{
+
+    public function before(Connection $connection): void
+    {
+        %statements%
+    }
+
+    public function after(Connection $connection): void
+    {
+    }
+
+}
