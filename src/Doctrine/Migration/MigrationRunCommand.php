@@ -2,7 +2,6 @@
 
 namespace ShipMonk\Doctrine\Migration;
 
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -17,18 +16,14 @@ class MigrationRunCommand extends Command
 
     private const ARGUMENT_PHASE = 'phase';
 
-    private EntityManagerInterface $entityManager;
-
     private MigrationService $migrationService;
 
     public function __construct(
-        EntityManagerInterface $entityManager,
         MigrationService $migrationService,
     )
     {
         parent::__construct();
 
-        $this->entityManager = $entityManager;
         $this->migrationService = $migrationService;
     }
 
@@ -64,18 +59,7 @@ class MigrationRunCommand extends Command
         $startTime = microtime(true);
         $output->write("Executing migration {$version} phase {$phase}... ");
 
-        $connection = $this->entityManager->getConnection();
-        $migration = $this->migrationService->getMigration($version);
-
-        if ($phase === MigrationPhase::BEFORE) {
-            $migration->before($connection);
-        }
-
-        if ($phase === MigrationPhase::AFTER) {
-            $migration->after($connection);
-        }
-
-        $this->migrationService->markMigrationExecuted($version, $phase);
+        $this->migrationService->executeMigration($version, $phase);
 
         $elapsed = sprintf('%.2f', round(microtime(true) - $startTime, 2));
         $output->writeln("<info>done</info>, {$elapsed} s elapsed.");
