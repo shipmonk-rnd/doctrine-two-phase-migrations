@@ -27,13 +27,21 @@ class MigrationSkipCommand extends Command
 
     public function run(InputInterface $input, OutputInterface $output): int
     {
+        $skipped = false;
+
         foreach ([MigrationPhase::BEFORE, MigrationPhase::AFTER] as $phase) {
             $executed = $this->migrationService->getExecutedVersions($phase);
             $prepared = $this->migrationService->getPreparedVersions();
 
             foreach (array_diff($prepared, $executed) as $version) {
                 $this->migrationService->markMigrationExecuted($version, $phase);
+                $output->writeln("Migration {$version} phase {$phase} skipped.");
+                $skipped = true;
             }
+        }
+
+        if (!$skipped) {
+            $output->writeln('No migration skipped.');
         }
 
         return 0;
