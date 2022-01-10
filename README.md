@@ -76,7 +76,7 @@ bin/console migration:skip
 
 #### Executing migration:
 
-Execution is performed without any interaction and does not fail nor warn when no migration is present for exection.
+Execution is performed without any interaction and does not fail nor warn when no migration is present for execution.
 Just be aware that those queries are not wrapped in transaction like it happens in `doctrine/migrations`.
 
 ```bash
