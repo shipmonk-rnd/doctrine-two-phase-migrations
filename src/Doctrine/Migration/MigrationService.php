@@ -38,7 +38,7 @@ class MigrationService
         string $migrationClassPrefix = 'Migration',
         bool $includeDropTableInDatabaseSync = true,
         string $templateFilePath = __DIR__ . '/template/migration.txt',
-        string $templateIndent = '        ',
+        string $templateIndent = '        '
     )
     {
         $this->connection = $connection;
@@ -117,17 +117,17 @@ class MigrationService
      */
     public function getExecutedVersions(string $phase): array
     {
-        $result = $this->connection->fetchAllAssociative(
+        /** @var array<array{ version: string }> $result */
+        $result = $this->connection->executeQuery(
             'SELECT version FROM migration WHERE phase = :phase',
             [
                 'phase' => $phase,
             ],
-        );
+        )->fetchAll();
 
         $versions = [];
 
         foreach ($result as $row) {
-            /** @var string $version */
             $version = $row['version'];
             $versions[$version] = $version;
         }

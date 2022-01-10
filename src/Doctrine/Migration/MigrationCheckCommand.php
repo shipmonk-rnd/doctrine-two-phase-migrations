@@ -20,7 +20,7 @@ class MigrationCheckCommand extends Command
 
     public function __construct(
         EntityManagerInterface $entityManager,
-        MigrationService $migrationService,
+        MigrationService $migrationService
     )
     {
         parent::__construct();

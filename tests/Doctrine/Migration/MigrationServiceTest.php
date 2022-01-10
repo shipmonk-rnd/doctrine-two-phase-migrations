@@ -45,14 +45,14 @@ class MigrationServiceTest extends TestCase
         self::assertSame([$generatedVersion => $generatedVersion], $service->getExecutedVersions(MigrationPhase::BEFORE));
         self::assertSame([], $service->getExecutedVersions(MigrationPhase::AFTER));
         self::assertSame([$generatedVersion => $generatedVersion], $service->getPreparedVersions());
-        self::assertSame([['id' => '1']], $connection->fetchAllAssociative('SELECT * FROM sample'));
+        self::assertSame([['id' => '1']], $connection->executeQuery('SELECT * FROM sample')->fetchAll());
 
         $service->executeMigration($generatedVersion, MigrationPhase::AFTER);
 
         self::assertSame([$generatedVersion => $generatedVersion], $service->getExecutedVersions(MigrationPhase::BEFORE));
         self::assertSame([$generatedVersion => $generatedVersion], $service->getExecutedVersions(MigrationPhase::AFTER));
         self::assertSame([$generatedVersion => $generatedVersion], $service->getPreparedVersions());
-        self::assertSame([['id' => '1']], $connection->fetchAllAssociative('SELECT * FROM sample'));
+        self::assertSame([['id' => '1']], $connection->executeQuery('SELECT * FROM sample')->fetchAll());
     }
 
 }
