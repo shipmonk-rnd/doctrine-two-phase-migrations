@@ -14,7 +14,7 @@ use function sprintf;
 class MigrationRunCommand extends Command
 {
 
-    private const ARGUMENT_PHASE = 'phase';
+    public const ARGUMENT_PHASE = 'phase';
 
     private MigrationService $migrationService;
 
@@ -46,9 +46,14 @@ class MigrationRunCommand extends Command
 
         $executed = $this->migrationService->getExecutedVersions($phase);
         $prepared = $this->migrationService->getPreparedVersions();
+        $toBeExecuted = array_diff($prepared, $executed);
 
-        foreach (array_diff($prepared, $executed) as $version) {
+        foreach ($toBeExecuted as $version) {
             $this->executeMigration($output, $version, $phase);
+        }
+
+        if ($toBeExecuted === []) {
+            $output->writeln('<comment>No migration executed.</comment>');
         }
 
         return 0;
