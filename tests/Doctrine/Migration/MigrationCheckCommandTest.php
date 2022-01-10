@@ -27,15 +27,15 @@ class MigrationCheckCommandTest extends TestCase
         $command->run(new ArrayInput([]), $output);
 
         self::assertSame(
-        <<<OUTPUT
-        Phase before fully executed, no awaiting migrations
-        Phase after not fully executed, awaiting migrations:
-         > fakeversion
-        Database is not synced with entities, missing updates:
-         > CREATE TABLE entity (id VARCHAR(255) NOT NULL, PRIMARY KEY(id))\n
-        OUTPUT, $output->fetch());
+            <<<'OUTPUT'
+            Phase before fully executed, no awaiting migrations
+            Phase after not fully executed, awaiting migrations:
+             > fakeversion
+            Database is not synced with entities, missing updates:
+             > CREATE TABLE entity (id VARCHAR(255) NOT NULL, PRIMARY KEY(id))
+            OUTPUT . "\n",
+            $output->fetch(),
+        );
     }
-
-
 
 }

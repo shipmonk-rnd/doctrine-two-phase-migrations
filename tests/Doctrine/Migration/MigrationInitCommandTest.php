@@ -5,7 +5,6 @@ namespace ShipMonk\Doctrine\Migration;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
-use Symfony\Component\Console\Output\NullOutput;
 
 class MigrationInitCommandTest extends TestCase
 {

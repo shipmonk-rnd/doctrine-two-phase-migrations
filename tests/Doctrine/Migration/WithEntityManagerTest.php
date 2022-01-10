@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types = 1);
 
 namespace ShipMonk\Doctrine\Migration;
 
@@ -7,6 +7,7 @@ use Doctrine\ORM\Configuration;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\UnderscoreNamingStrategy;
+use function sys_get_temp_dir;
 
 trait WithEntityManagerTest
 {

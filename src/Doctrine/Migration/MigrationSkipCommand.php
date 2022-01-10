@@ -41,7 +41,7 @@ class MigrationSkipCommand extends Command
         }
 
         if (!$skipped) {
-            $output->writeln("No migration skipped.");
+            $output->writeln('No migration skipped.');
         }
 
         return 0;
