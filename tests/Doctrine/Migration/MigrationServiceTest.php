@@ -66,14 +66,14 @@ class MigrationServiceTest extends TestCase
 
         $connection->expects(self::once())
             ->method('executeQuery')
-            ->with(
+            ->with(self::stringStartsWith(
                 'CREATE TABLE migration (' .
                     'version VARCHAR(14) NOT NULL, ' .
                     'phase VARCHAR(6) NOT NULL, ' .
                     'executed DATETIME NOT NULL COMMENT \'(DC2Type:datetimetz_immutable)\', ' .
                     'PRIMARY KEY(version, phase)' .
-                ') DEFAULT CHARACTER SET utf8 COLLATE `utf8_unicode_ci` ENGINE = InnoDB',
-            );
+                ')',
+            ));
 
         $service = new MigrationService($connection, sys_get_temp_dir());
         $service->initializeMigrationTable();
