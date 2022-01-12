@@ -8,6 +8,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use function in_array;
+use function is_string;
 use function microtime;
 use function round;
 use function sprintf;
@@ -40,6 +41,10 @@ class MigrationRunCommand extends Command
     public function run(InputInterface $input, OutputInterface $output): int
     {
         $phaseArgument = $input->getArgument(self::ARGUMENT_PHASE);
+
+        if (!is_string($phaseArgument)) {
+            throw new LogicException('Can never happen for required non-array argument');
+        }
 
         $this->executeMigrations(
             $output,
@@ -95,11 +100,9 @@ class MigrationRunCommand extends Command
     }
 
     /**
-     * @param mixed $phaseArgument
      * @return string[]
-     * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingNativeTypeHint
      */
-    private function getPhasesToRun($phaseArgument): array
+    private function getPhasesToRun(string $phaseArgument): array
     {
         if ($phaseArgument === MigrationPhase::BEFORE) {
             return [MigrationPhase::BEFORE];
