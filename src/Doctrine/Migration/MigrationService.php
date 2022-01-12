@@ -159,7 +159,7 @@ class MigrationService
     {
         $migrationTableName = $this->getMigrationTableName();
 
-        if ($this->connection->getSchemaManager()->tablesExist($migrationTableName)) {
+        if ($this->connection->getSchemaManager()->tablesExist([$migrationTableName])) {
             return;
         }
 
