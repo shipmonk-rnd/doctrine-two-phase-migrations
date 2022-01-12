@@ -76,10 +76,15 @@ bin/console migration:skip
 
 #### Executing migration:
 
-Execution is performed without any interaction and does not fail nor warn when no migration is present for exection.
+Execution is performed without any interaction and does not fail nor warn when no migration is present for execution.
 Just be aware that those queries are not wrapped in transaction like it happens in `doctrine/migrations`.
 
 ```bash
 bin/console migration:run before
 bin/console migration:run after
 ```
+
+### Versions:
+
+- `1.*` supports PHP 7.4 and PHP 8.0 and has relaxed dependencies of libraries
+- `2.*` supports PHP 8.1
