@@ -45,7 +45,7 @@ class MigrationService
     {
         $this->connection = $connection;
         $this->migrationsDir = $migrationsDir;
-        $this->migrationClassNamespace = $migrationClassNamespace;
+        $this->migrationClassNamespace = trim($migrationClassNamespace, '\\');
         $this->migrationClassPrefix = $migrationClassPrefix;
         $this->includeDropTableInDatabaseSync = $includeDropTableInDatabaseSync;
         $this->templateFilePath = $templateFilePath;
@@ -186,7 +186,7 @@ class MigrationService
         $template = str_replace('%statements%', implode("\n" . $this->templateIndent, $statements), $template);
 
         $filePath = $migrationsDir . '/' . $migrationClassPrefix . $version . '.php';
-        FileSystem::createDir($migrationsDir);
+        FileSystem::createDir($migrationsDir, 0655);
         FileSystem::write($filePath, $template);
 
         return new MigrationFile($filePath, $version);

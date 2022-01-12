@@ -53,7 +53,7 @@ class MigrationRunCommand extends Command
         }
 
         if ($toBeExecuted === []) {
-            $output->writeln('<comment>No migration executed.</comment>');
+            $output->writeln("<comment>No migration executed in phase {$phase}.</comment>");
         }
 
         return 0;

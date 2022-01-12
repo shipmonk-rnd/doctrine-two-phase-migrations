@@ -9,7 +9,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
 class MigrationRunCommandTest extends TestCase
 {
 
-    public function testNoMigration(): void
+    public function testRun(): void
     {
         $migrationService = $this->createMock(MigrationService::class);
         $migrationService->expects(self::exactly(2))
@@ -26,7 +26,7 @@ class MigrationRunCommandTest extends TestCase
 
         $command = new MigrationRunCommand($migrationService);
 
-        self::assertSame("No migration executed.\n", $this->runPhase($command, MigrationPhase::AFTER));
+        self::assertSame("No migration executed in phase after.\n", $this->runPhase($command, MigrationPhase::AFTER));
         self::assertSame("Executing migration fakeversion phase after... done, 0.00 s elapsed.\n", $this->runPhase($command, MigrationPhase::AFTER));
     }
 
