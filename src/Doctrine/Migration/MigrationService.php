@@ -15,6 +15,7 @@ use function ksort;
 use function sprintf;
 use function str_replace;
 use function strlen;
+use function trim;
 
 class MigrationService
 {
@@ -186,7 +187,7 @@ class MigrationService
         $template = str_replace('%statements%', implode("\n" . $this->templateIndent, $statements), $template);
 
         $filePath = $migrationsDir . '/' . $migrationClassPrefix . $version . '.php';
-        FileSystem::createDir($migrationsDir, 0655);
+        FileSystem::createDir($migrationsDir, 655);
         FileSystem::write($filePath, $template);
 
         return new MigrationFile($filePath, $version);
