@@ -5,7 +5,6 @@ namespace ShipMonk\Doctrine\Migration;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\Schema;
-use Doctrine\DBAL\Types\Types;
 use LogicException;
 use Nette\Utils\FileSystem;
 use Nette\Utils\Finder;
@@ -147,7 +146,7 @@ class MigrationService
             'phase' => $phase,
             'executed' => $executedAt,
         ], [
-            'executed' => Types::DATETIMETZ_IMMUTABLE,
+            'executed' => 'datetimetz_immutable',
         ]);
     }
 
@@ -155,9 +154,9 @@ class MigrationService
     {
         $schema = new Schema();
         $table = $schema->createTable('migration');
-        $table->addColumn('version', Types::STRING, ['length' => strlen($this->getNextVersion())]);
-        $table->addColumn('phase', Types::STRING, ['length' => 6]);
-        $table->addColumn('executed', Types::DATETIMETZ_IMMUTABLE);
+        $table->addColumn('version', 'string', ['length' => strlen($this->getNextVersion())]);
+        $table->addColumn('phase', 'string', ['length' => 6]);
+        $table->addColumn('executed', 'datetimetz_immutable');
         $table->setPrimaryKey(['version', 'phase']);
 
         foreach ($schema->toSql($this->connection->getDatabasePlatform()) as $sql) {
