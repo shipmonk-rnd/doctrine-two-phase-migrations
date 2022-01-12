@@ -112,7 +112,7 @@ class MigrationService
             $migration->after($this->connection);
 
         } else {
-            throw new LogicException('Invalid phase given!');
+            throw new LogicException("Invalid phase {$phase} given!");
         }
 
         $this->markMigrationExecuted($version, $phase, new DateTimeImmutable());
