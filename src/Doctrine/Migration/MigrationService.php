@@ -72,6 +72,11 @@ class MigrationService
         return $this->migrationClassPrefix;
     }
 
+    public function getMigrationTableName(): string
+    {
+        return 'migration';
+    }
+
     private function getMigration(string $version): Migration
     {
         /** @var class-string<Migration> $fqn */
@@ -141,7 +146,7 @@ class MigrationService
 
     public function markMigrationExecuted(string $version, string $phase, DateTimeImmutable $executedAt): void
     {
-        $this->connection->insert('migration', [
+        $this->connection->insert($this->getMigrationTableName(), [
             'version' => $version,
             'phase' => $phase,
             'executed' => $executedAt,
@@ -152,8 +157,14 @@ class MigrationService
 
     public function initializeMigrationTable(): void
     {
+        $migrationTableName = $this->getMigrationTableName();
+
+        if ($this->connection->getSchemaManager()->tablesExist($migrationTableName)) {
+            return;
+        }
+
         $schema = new Schema();
-        $table = $schema->createTable('migration');
+        $table = $schema->createTable($migrationTableName);
         $table->addColumn('version', 'string', ['length' => strlen($this->getNextVersion())]);
         $table->addColumn('phase', 'string', ['length' => 6]);
         $table->addColumn('executed', 'datetimetz_immutable');

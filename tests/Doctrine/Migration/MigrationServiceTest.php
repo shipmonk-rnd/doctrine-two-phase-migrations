@@ -2,9 +2,7 @@
 
 namespace ShipMonk\Doctrine\Migration;
 
-use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
-use Doctrine\DBAL\Platforms\MySQL80Platform;
 use Nette\Utils\FileSystem;
 use PHPUnit\Framework\TestCase;
 use function sys_get_temp_dir;
@@ -22,8 +20,10 @@ class MigrationServiceTest extends TestCase
 
         $connection = DriverManager::getConnection(['url' => 'sqlite:///:memory:']);
         $service = new MigrationService($connection, $migrationsDir);
+        $migrationTableName = $service->getMigrationTableName();
 
         $service->initializeMigrationTable();
+        $service->initializeMigrationTable(); // double init should not fail
 
         self::assertSame([], $service->getExecutedVersions(MigrationPhase::BEFORE));
         self::assertSame([], $service->getExecutedVersions(MigrationPhase::AFTER));
@@ -41,6 +41,7 @@ class MigrationServiceTest extends TestCase
         self::assertSame([], $service->getExecutedVersions(MigrationPhase::BEFORE));
         self::assertSame([], $service->getExecutedVersions(MigrationPhase::AFTER));
         self::assertSame([$generatedVersion => $generatedVersion], $service->getPreparedVersions());
+        self::assertCount(0, $connection->executeQuery("SELECT * FROM {$migrationTableName}")->fetchAll());
 
         $service->executeMigration($generatedVersion, MigrationPhase::BEFORE);
 
@@ -48,35 +49,29 @@ class MigrationServiceTest extends TestCase
         self::assertSame([], $service->getExecutedVersions(MigrationPhase::AFTER));
         self::assertSame([$generatedVersion => $generatedVersion], $service->getPreparedVersions());
         self::assertSame([['id' => '1']], $connection->executeQuery('SELECT * FROM sample')->fetchAll());
+        self::assertCount(1, $connection->executeQuery("SELECT * FROM {$migrationTableName}")->fetchAll());
 
         $service->executeMigration($generatedVersion, MigrationPhase::AFTER);
 
         self::assertSame([$generatedVersion => $generatedVersion], $service->getExecutedVersions(MigrationPhase::BEFORE));
         self::assertSame([$generatedVersion => $generatedVersion], $service->getExecutedVersions(MigrationPhase::AFTER));
         self::assertSame([$generatedVersion => $generatedVersion], $service->getPreparedVersions());
-        self::assertSame([['id' => '1']], $connection->executeQuery('SELECT * FROM sample')->fetchAll());
+        self::assertCount(2, $connection->executeQuery("SELECT * FROM {$migrationTableName}")->fetchAll());
     }
 
     public function testInitialization(): void
     {
-        $connection = $this->createMock(Connection::class);
-        $connection->expects(self::once())
-            ->method('getDatabasePlatform')
-            ->willReturn(new MySQL80Platform());
-
-        $connection->expects(self::once())
-            ->method('executeQuery')
-            ->with(self::stringStartsWith(
-                'CREATE TABLE migration (' .
-                    'version VARCHAR(14) NOT NULL, ' .
-                    'phase VARCHAR(6) NOT NULL, ' .
-                    'executed DATETIME NOT NULL COMMENT \'(DC2Type:datetimetz_immutable)\', ' .
-                    'PRIMARY KEY(version, phase)' .
-                ')',
-            ));
-
+        $connection = DriverManager::getConnection(['url' => 'sqlite:///:memory:']);
         $service = new MigrationService($connection, sys_get_temp_dir());
         $service->initializeMigrationTable();
+
+        $migrationTableName = $service->getMigrationTableName();
+        $table = $connection->getSchemaManager()->listTableDetails($migrationTableName);
+
+        self::assertTrue($table->hasColumn('version'));
+        self::assertTrue($table->hasColumn('phase'));
+        self::assertTrue($table->hasColumn('executed'));
+        self::assertTrue($table->hasPrimaryKey());
     }
 
 }
