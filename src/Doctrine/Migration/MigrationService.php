@@ -94,7 +94,7 @@ class MigrationService
             throw new LogicException('Invalid phase given!');
         }
 
-        $this->markMigrationExecuted($version, $phase);
+        $this->markMigrationExecuted($version, $phase, new DateTimeImmutable());
     }
 
     /**
@@ -140,13 +140,12 @@ class MigrationService
         return $versions;
     }
 
-    public function markMigrationExecuted(string $version, string $phase): void
+    public function markMigrationExecuted(string $version, string $phase, DateTimeImmutable $executedAt): void
     {
-        $now = new DateTimeImmutable();
         $this->connection->insert('migration', [
             'version' => $version,
             'phase' => $phase,
-            'executed' => $now,
+            'executed' => $executedAt,
         ], [
             'executed' => Types::DATETIMETZ_IMMUTABLE,
         ]);
