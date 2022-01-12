@@ -40,7 +40,7 @@ services:
 
 #### Initialization:
 
-After installation, you need to create `migration` table in your database:
+After installation, you need to create `migration` table in your database. It is safe to run it even when the table was already initialized.
 
 ```bash
 bin/console migration:init
