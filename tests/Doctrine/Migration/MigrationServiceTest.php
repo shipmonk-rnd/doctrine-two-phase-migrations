@@ -2,7 +2,9 @@
 
 namespace ShipMonk\Doctrine\Migration;
 
+use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
+use Doctrine\DBAL\Platforms\MySQL80Platform;
 use Nette\Utils\FileSystem;
 use PHPUnit\Framework\TestCase;
 use function sys_get_temp_dir;
@@ -53,6 +55,28 @@ class MigrationServiceTest extends TestCase
         self::assertSame([$generatedVersion => $generatedVersion], $service->getExecutedVersions(MigrationPhase::AFTER));
         self::assertSame([$generatedVersion => $generatedVersion], $service->getPreparedVersions());
         self::assertSame([['id' => '1']], $connection->executeQuery('SELECT * FROM sample')->fetchAll());
+    }
+
+    public function testInitialization(): void
+    {
+        $connection = $this->createMock(Connection::class);
+        $connection->expects(self::once())
+            ->method('getDatabasePlatform')
+            ->willReturn(new MySQL80Platform());
+
+        $connection->expects(self::once())
+            ->method('executeQuery')
+            ->with(
+                'CREATE TABLE migration (' .
+                    'version VARCHAR(14) NOT NULL, ' .
+                    'phase VARCHAR(6) NOT NULL, ' .
+                    'executed DATETIME NOT NULL COMMENT \'(DC2Type:datetimetz_immutable)\', ' .
+                    'PRIMARY KEY(version, phase)' .
+                ') DEFAULT CHARACTER SET utf8 COLLATE `utf8_unicode_ci` ENGINE = InnoDB',
+            );
+
+        $service = new MigrationService($connection, sys_get_temp_dir());
+        $service->initializeMigrationTable();
     }
 
 }

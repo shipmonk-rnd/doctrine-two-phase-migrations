@@ -2,8 +2,10 @@
 
 namespace ShipMonk\Doctrine\Migration;
 
+use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\Schema;
+use Doctrine\DBAL\Types\Types;
 use LogicException;
 use Nette\Utils\FileSystem;
 use Nette\Utils\Finder;
@@ -13,6 +15,7 @@ use function implode;
 use function ksort;
 use function sprintf;
 use function str_replace;
+use function strlen;
 
 class MigrationService
 {
@@ -139,10 +142,13 @@ class MigrationService
 
     public function markMigrationExecuted(string $version, string $phase): void
     {
+        $now = new DateTimeImmutable();
         $this->connection->insert('migration', [
             'version' => $version,
             'phase' => $phase,
-            'executed' => date('Y-m-d H:i:s'),
+            'executed' => $now,
+        ], [
+            'executed' => Types::DATETIMETZ_IMMUTABLE,
         ]);
     }
 
@@ -150,9 +156,9 @@ class MigrationService
     {
         $schema = new Schema();
         $table = $schema->createTable('migration');
-        $table->addColumn('version', 'string', ['length' => 14]);
-        $table->addColumn('phase', 'string', ['length' => 6]);
-        $table->addColumn('executed', 'datetime');
+        $table->addColumn('version', Types::STRING, ['length' => strlen($this->getNextVersion())]);
+        $table->addColumn('phase', Types::STRING, ['length' => 6]);
+        $table->addColumn('executed', Types::DATETIMETZ_IMMUTABLE);
         $table->setPrimaryKey(['version', 'phase']);
 
         foreach ($schema->toSql($this->connection->getDatabasePlatform()) as $sql) {
@@ -175,7 +181,7 @@ class MigrationService
         $migrationClassPrefix = $this->getMigrationClassPrefix();
         $migrationClassNamespace = $this->getMigrationClassNamespace();
 
-        $version = date('YmdHis');
+        $version = $this->getNextVersion();
         $template = FileSystem::read($this->templateFilePath);
         $template = str_replace('%namespace%', $migrationClassNamespace, $template);
         $template = str_replace('%version%', $version, $template);
@@ -186,6 +192,11 @@ class MigrationService
         FileSystem::write($filePath, $template);
 
         return new MigrationFile($filePath, $version);
+    }
+
+    private function getNextVersion(): string
+    {
+        return date('YmdHis');
     }
 
 }
