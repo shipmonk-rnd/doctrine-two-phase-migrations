@@ -22,9 +22,11 @@ class MigrationServiceTest extends TestCase
         $service = new MigrationService($connection, $migrationsDir);
         $migrationTableName = $service->getMigrationTableName();
 
-        $service->initializeMigrationTable();
-        $service->initializeMigrationTable(); // double init should not fail
+        $initialized1 = $service->initializeMigrationTable();
+        $initialized2 = $service->initializeMigrationTable(); // double init should not fail
 
+        self::assertTrue($initialized1);
+        self::assertFalse($initialized2);
         self::assertSame([], $service->getExecutedVersions(MigrationPhase::BEFORE));
         self::assertSame([], $service->getExecutedVersions(MigrationPhase::AFTER));
         self::assertSame([], $service->getPreparedVersions());

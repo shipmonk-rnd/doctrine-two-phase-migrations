@@ -13,7 +13,8 @@ class MigrationInitCommandTest extends TestCase
     {
         $migrationService = $this->createMock(MigrationService::class);
         $migrationService->expects(self::once())
-            ->method('initializeMigrationTable');
+            ->method('initializeMigrationTable')
+            ->willReturn(true);
 
         $output = new BufferedOutput();
         $command = new MigrationInitCommand($migrationService);
