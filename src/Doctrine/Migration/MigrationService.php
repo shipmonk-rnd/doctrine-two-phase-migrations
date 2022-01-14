@@ -205,16 +205,23 @@ class MigrationService
 
         $schemaManager = $this->entityManager->getConnection()->getSchemaManager();
         $fromSchema = $schemaManager->createSchema();
-
-        foreach ($this->getExcludedTables() as $table) {
-            $fromSchema->dropTable($table);
-        }
-
         $toSchema = $schemaTool->getSchemaFromMetadata($classes);
+
+        $this->excludeTablesFromSchema($fromSchema);
+        $this->excludeTablesFromSchema($toSchema);
 
         $schemaComparator = new Comparator();
         $schemaDiff = $schemaComparator->compare($fromSchema, $toSchema);
         return $schemaDiff->toSql($platform);
+    }
+
+    private function excludeTablesFromSchema(Schema $schema): void
+    {
+        foreach ($this->getExcludedTables() as $table) {
+            if ($schema->hasTable($table)) {
+                $schema->dropTable($table);
+            }
+        }
     }
 
     /**

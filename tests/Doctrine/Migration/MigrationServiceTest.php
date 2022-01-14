@@ -82,13 +82,40 @@ class MigrationServiceTest extends TestCase
         self::assertTrue($table->hasPrimaryKey());
     }
 
-    private function createMigrationService(EntityManagerInterface $entityManager): MigrationService
+    public function testExcludedTables(): void
+    {
+        $entityManager = $this->createEntityManager();
+        $service = $this->createMigrationService($entityManager, []);
+
+        $entityManager->getConnection()->executeQuery('CREATE TABLE excluded (id INT)');
+
+        self::assertSame([
+            'CREATE TABLE entity (id VARCHAR(255) NOT NULL, PRIMARY KEY(id))',
+            'DROP TABLE excluded',
+        ], $service->generateDiffSqls());
+
+        $service = $this->createMigrationService($entityManager, ['excluded']);
+
+        self::assertSame([
+            'CREATE TABLE entity (id VARCHAR(255) NOT NULL, PRIMARY KEY(id))',
+        ], $service->generateDiffSqls());
+
+        // cannot create excluded table even when defined in metadata - it would always fail in migration:check
+        $service = $this->createMigrationService($entityManager, ['excluded', 'entity']);
+
+        self::assertSame([], $service->generateDiffSqls());
+    }
+
+    /**
+     * @param string[] $excludedTables
+     */
+    private function createMigrationService(EntityManagerInterface $entityManager, array $excludedTables = []): MigrationService
     {
         $migrationsDir = __DIR__ . '/../../../tmp/migrations';
         FileSystem::delete($migrationsDir);
         FileSystem::createDir($migrationsDir);
 
-        return new MigrationService($entityManager, $migrationsDir);
+        return new MigrationService($entityManager, $migrationsDir, 'Migrations', 'Migration', $excludedTables);
     }
 
 }
