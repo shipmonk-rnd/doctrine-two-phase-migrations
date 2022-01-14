@@ -2,8 +2,6 @@
 
 namespace ShipMonk\Doctrine\Migration;
 
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\SchemaTool;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -14,17 +12,13 @@ use function implode;
 class MigrationCheckCommand extends Command
 {
 
-    private EntityManagerInterface $entityManager;
-
     private MigrationService $migrationService;
 
     public function __construct(
-        EntityManagerInterface $entityManager,
         MigrationService $migrationService
     )
     {
         parent::__construct();
-        $this->entityManager = $entityManager;
         $this->migrationService = $migrationService;
     }
 
@@ -45,9 +39,7 @@ class MigrationCheckCommand extends Command
 
     private function checkEntitiesSyncedWithDatabase(OutputInterface $output): void
     {
-        $schemaTool = new SchemaTool($this->entityManager);
-        $metadata = $this->entityManager->getMetadataFactory()->getAllMetadata();
-        $updates = $schemaTool->getUpdateSchemaSql($metadata, !$this->migrationService->shouldIncludeDropTableInDatabaseSync());
+        $updates = $this->migrationService->generateDiffSqls();
 
         if (count($updates) !== 0) {
             $output->writeln("<comment>Database is not synced with entities, missing updates:\n > " . implode("\n > ", $updates) . '</comment>');

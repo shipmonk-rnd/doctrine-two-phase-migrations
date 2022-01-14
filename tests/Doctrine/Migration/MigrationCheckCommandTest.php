@@ -13,6 +13,8 @@ class MigrationCheckCommandTest extends TestCase
 
     public function testCheck(): void
     {
+        $diffSql = 'SELECT 1';
+
         $migrationService = $this->createMock(MigrationService::class);
         $migrationService->expects(self::exactly(2))
             ->method('getExecutedVersions')
@@ -22,17 +24,21 @@ class MigrationCheckCommandTest extends TestCase
             ->method('getPreparedVersions')
             ->willReturn(['fakeversion']);
 
+        $migrationService->expects(self::once())
+            ->method('generateDiffSqls')
+            ->willReturn([$diffSql]);
+
         $output = new BufferedOutput();
-        $command = new MigrationCheckCommand($this->getEntityManager(), $migrationService);
+        $command = new MigrationCheckCommand($migrationService);
         $command->run(new ArrayInput([]), $output);
 
         self::assertSame(
-            <<<'OUTPUT'
+            <<<"OUTPUT"
             Phase before fully executed, no awaiting migrations
             Phase after not fully executed, awaiting migrations:
              > fakeversion
             Database is not synced with entities, missing updates:
-             > CREATE TABLE entity (id VARCHAR(255) NOT NULL, PRIMARY KEY(id))
+             > $diffSql
             OUTPUT . "\n",
             $output->fetch(),
         );

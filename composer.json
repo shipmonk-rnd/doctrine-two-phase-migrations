@@ -39,6 +39,7 @@
         "check:ec": "ec src",
         "check:cs": "phpcs",
         "check:types": "phpstan analyse -vvv",
-        "check:tests": "phpunit -vvv tests"
+        "check:tests": "phpunit -vvv tests",
+        "fix:cs": "phpcbf"
     }
 }
