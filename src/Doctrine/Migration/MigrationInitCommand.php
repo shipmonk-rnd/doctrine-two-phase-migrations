@@ -30,8 +30,8 @@ class MigrationInitCommand extends Command
     public function run(InputInterface $input, OutputInterface $output): int
     {
         $output->write('<comment>Creating migration table... </comment>');
-        $this->migrationService->initializeMigrationTable();
-        $output->writeln('<info>done.</info>');
+        $initialized = $this->migrationService->initializeMigrationTable();
+        $output->writeln($initialized ? '<info>done.</info>' : '<comment>already exists</comment>');
 
         return 0;
     }

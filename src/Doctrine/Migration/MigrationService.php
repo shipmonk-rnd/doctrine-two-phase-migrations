@@ -156,12 +156,12 @@ class MigrationService
         ]);
     }
 
-    public function initializeMigrationTable(): void
+    public function initializeMigrationTable(): bool
     {
         $migrationTableName = $this->getMigrationTableName();
 
         if ($this->connection->getSchemaManager()->tablesExist([$migrationTableName])) {
-            return;
+            return false;
         }
 
         $schema = new Schema();
@@ -174,6 +174,8 @@ class MigrationService
         foreach ($schema->toSql($this->connection->getDatabasePlatform()) as $sql) {
             $this->connection->executeQuery($sql);
         }
+
+        return true;
     }
 
     /**
