@@ -2,43 +2,45 @@
 
 namespace ShipMonk\Doctrine\Migration;
 
-use Doctrine\DBAL\DriverManager;
+use Doctrine\ORM\EntityManagerInterface;
 use Nette\Utils\FileSystem;
 use PHPUnit\Framework\TestCase;
-use function sys_get_temp_dir;
 
 class MigrationServiceTest extends TestCase
 {
 
+    use WithEntityManagerTest;
+
     public function testInitGenerationExecution(): void
     {
-        $sql1 = 'CREATE TABLE sample (id INT NOT NULL)';
-        $sql2 = 'INSERT INTO sample VALUES (1)';
-        $migrationsDir = sys_get_temp_dir() . '/migrations';
-        FileSystem::delete($migrationsDir);
-        FileSystem::createDir($migrationsDir);
+        $entityManager = $this->createEntityManager();
+        $connection = $entityManager->getConnection();
+        $service = $this->createMigrationService($entityManager);
 
-        $connection = DriverManager::getConnection(['url' => 'sqlite:///:memory:']);
-        $service = new MigrationService($connection, $migrationsDir);
         $migrationTableName = $service->getMigrationTableName();
 
         $initialized1 = $service->initializeMigrationTable();
         $initialized2 = $service->initializeMigrationTable(); // double init should not fail
 
+        $sqls = $service->generateDiffSqls();
+
         self::assertTrue($initialized1);
         self::assertFalse($initialized2);
+        self::assertSame(['CREATE TABLE entity (id VARCHAR(255) NOT NULL, PRIMARY KEY(id))'], $sqls);
+
         self::assertSame([], $service->getExecutedVersions(MigrationPhase::BEFORE));
         self::assertSame([], $service->getExecutedVersions(MigrationPhase::AFTER));
         self::assertSame([], $service->getPreparedVersions());
 
-        $generatedFile = $service->generateMigrationFile([$sql1, $sql2]);
+        $generatedFile = $service->generateMigrationFile($sqls);
         $generatedVersion = $generatedFile->getVersion();
         $generatedContents = FileSystem::read($generatedFile->getFilePath());
 
         require $generatedFile->getFilePath();
 
-        self::assertStringContainsString($sql1, $generatedContents);
-        self::assertStringContainsString($sql2, $generatedContents);
+        foreach ($sqls as $sql) {
+            self::assertStringContainsString($sql, $generatedContents);
+        }
 
         self::assertSame([], $service->getExecutedVersions(MigrationPhase::BEFORE));
         self::assertSame([], $service->getExecutedVersions(MigrationPhase::AFTER));
@@ -50,7 +52,6 @@ class MigrationServiceTest extends TestCase
         self::assertSame([$generatedVersion => $generatedVersion], $service->getExecutedVersions(MigrationPhase::BEFORE));
         self::assertSame([], $service->getExecutedVersions(MigrationPhase::AFTER));
         self::assertSame([$generatedVersion => $generatedVersion], $service->getPreparedVersions());
-        self::assertSame([['id' => '1']], $connection->executeQuery('SELECT * FROM sample')->fetchAll());
         self::assertCount(1, $connection->executeQuery("SELECT * FROM {$migrationTableName}")->fetchAll());
 
         $service->executeMigration($generatedVersion, MigrationPhase::AFTER);
@@ -59,21 +60,62 @@ class MigrationServiceTest extends TestCase
         self::assertSame([$generatedVersion => $generatedVersion], $service->getExecutedVersions(MigrationPhase::AFTER));
         self::assertSame([$generatedVersion => $generatedVersion], $service->getPreparedVersions());
         self::assertCount(2, $connection->executeQuery("SELECT * FROM {$migrationTableName}")->fetchAll());
+
+        $sqls2 = $service->generateDiffSqls();
+
+        self::assertSame([], $sqls2); // no diff after migration
     }
 
     public function testInitialization(): void
     {
-        $connection = DriverManager::getConnection(['url' => 'sqlite:///:memory:']);
-        $service = new MigrationService($connection, sys_get_temp_dir());
-        $service->initializeMigrationTable();
+        $entityManager = $this->createEntityManager();
+        $service = $this->createMigrationService($entityManager);
+
+        self::assertTrue($service->initializeMigrationTable());
 
         $migrationTableName = $service->getMigrationTableName();
-        $table = $connection->getSchemaManager()->listTableDetails($migrationTableName);
+        $table = $entityManager->getConnection()->getSchemaManager()->listTableDetails($migrationTableName);
 
         self::assertTrue($table->hasColumn('version'));
         self::assertTrue($table->hasColumn('phase'));
         self::assertTrue($table->hasColumn('executed'));
         self::assertTrue($table->hasPrimaryKey());
+    }
+
+    public function testExcludedTables(): void
+    {
+        $entityManager = $this->createEntityManager();
+        $service = $this->createMigrationService($entityManager, []);
+
+        $entityManager->getConnection()->executeQuery('CREATE TABLE excluded (id INT)');
+
+        self::assertSame([
+            'CREATE TABLE entity (id VARCHAR(255) NOT NULL, PRIMARY KEY(id))',
+            'DROP TABLE excluded',
+        ], $service->generateDiffSqls());
+
+        $service = $this->createMigrationService($entityManager, ['excluded']);
+
+        self::assertSame([
+            'CREATE TABLE entity (id VARCHAR(255) NOT NULL, PRIMARY KEY(id))',
+        ], $service->generateDiffSqls());
+
+        // cannot create excluded table even when defined in metadata - it would always fail in migration:check
+        $service = $this->createMigrationService($entityManager, ['excluded', 'entity']);
+
+        self::assertSame([], $service->generateDiffSqls());
+    }
+
+    /**
+     * @param string[] $excludedTables
+     */
+    private function createMigrationService(EntityManagerInterface $entityManager, array $excludedTables = []): MigrationService
+    {
+        $migrationsDir = __DIR__ . '/../../../tmp/migrations';
+        FileSystem::delete($migrationsDir);
+        FileSystem::createDir($migrationsDir);
+
+        return new MigrationService($entityManager, $migrationsDir, 'Migrations', 'Migration', $excludedTables);
     }
 
 }

@@ -7,22 +7,30 @@ use Doctrine\ORM\Configuration;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\UnderscoreNamingStrategy;
-use function sys_get_temp_dir;
+use Nette\Utils\FileSystem;
 
 trait WithEntityManagerTest
 {
 
-    public function getEntityManager(): EntityManagerInterface
+    public function createEntityManager(): EntityManagerInterface
     {
+        $tmpDir = __DIR__ . '/../../../tmp';
+
+        $databaseFile = $tmpDir . '/db.sqlite';
+        FileSystem::delete($databaseFile);
+
         $config = new Configuration();
         $config->setProxyNamespace('Tmp\Doctrine\Tests\Proxies');
-        $config->setProxyDir(sys_get_temp_dir() . '/doctrine');
+        $config->setProxyDir($tmpDir . '/doctrine');
         $config->setAutoGenerateProxyClasses(false);
         $config->setSecondLevelCacheEnabled(false);
         $config->setNamingStrategy(new UnderscoreNamingStrategy());
         $config->setMetadataDriverImpl($config->newDefaultAnnotationDriver([__DIR__], false));
 
-        $connection = DriverManager::getConnection(['url' => 'sqlite:///:memory:'], $config);
+        $connection = DriverManager::getConnection([
+            'driver' => 'pdo_sqlite',
+            'path' => $databaseFile,
+        ]);
         return EntityManager::create($connection, $config, $connection->getEventManager());
     }
 

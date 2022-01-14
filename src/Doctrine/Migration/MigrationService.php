@@ -4,7 +4,10 @@ namespace ShipMonk\Doctrine\Migration;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Schema\Comparator;
 use Doctrine\DBAL\Schema\Schema;
+use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Tools\SchemaTool;
 use LogicException;
 use Nette\Utils\FileSystem;
 use Nette\Utils\Finder;
@@ -20,6 +23,8 @@ use function trim;
 class MigrationService
 {
 
+    private EntityManagerInterface $entityManager;
+
     private Connection $connection;
 
     private string $migrationsDir;
@@ -28,27 +33,35 @@ class MigrationService
 
     private string $migrationClassPrefix;
 
-    private bool $includeDropTableInDatabaseSync;
+    /**
+     * @var string[]
+     */
+    private array $excludedTables;
 
     private string $templateFilePath;
 
     private string $templateIndent;
 
+    /**
+     * @param string[] $excludedTables
+     */
     public function __construct(
-        Connection $connection,
+        EntityManagerInterface $entityManager,
         string $migrationsDir,
         string $migrationClassNamespace = 'Migrations',
         string $migrationClassPrefix = 'Migration',
-        bool $includeDropTableInDatabaseSync = true,
+        array $excludedTables = [],
         string $templateFilePath = __DIR__ . '/template/migration.txt',
         string $templateIndent = '        '
     )
     {
-        $this->connection = $connection;
+        $this->entityManager = $entityManager;
+        $this->connection = $entityManager->getConnection();
         $this->migrationsDir = $migrationsDir;
         $this->migrationClassNamespace = trim($migrationClassNamespace, '\\');
         $this->migrationClassPrefix = $migrationClassPrefix;
-        $this->includeDropTableInDatabaseSync = $includeDropTableInDatabaseSync;
+        $this->excludedTables = $excludedTables;
+        $this->excludedTables[] = $this->getMigrationTableName();
         $this->templateFilePath = $templateFilePath;
         $this->templateIndent = $templateIndent;
     }
@@ -63,9 +76,12 @@ class MigrationService
         return $this->migrationClassNamespace;
     }
 
-    public function shouldIncludeDropTableInDatabaseSync(): bool
+    /**
+     * @return string[]
+     */
+    public function getExcludedTables(): array
     {
-        return $this->includeDropTableInDatabaseSync;
+        return $this->excludedTables;
     }
 
     private function getMigrationClassPrefix(): string
@@ -176,6 +192,36 @@ class MigrationService
         }
 
         return true;
+    }
+
+    /**
+     * @return string[]
+     */
+    public function generateDiffSqls(): array
+    {
+        $schemaTool = new SchemaTool($this->entityManager);
+        $platform = $this->entityManager->getConnection()->getDatabasePlatform();
+        $classes = $this->entityManager->getMetadataFactory()->getAllMetadata();
+
+        $schemaManager = $this->entityManager->getConnection()->getSchemaManager();
+        $fromSchema = $schemaManager->createSchema();
+        $toSchema = $schemaTool->getSchemaFromMetadata($classes);
+
+        $this->excludeTablesFromSchema($fromSchema);
+        $this->excludeTablesFromSchema($toSchema);
+
+        $schemaComparator = new Comparator();
+        $schemaDiff = $schemaComparator->compare($fromSchema, $toSchema);
+        return $schemaDiff->toSql($platform);
+    }
+
+    private function excludeTablesFromSchema(Schema $schema): void
+    {
+        foreach ($this->getExcludedTables() as $table) {
+            if ($schema->hasTable($table)) {
+                $schema->dropTable($table);
+            }
+        }
     }
 
     /**

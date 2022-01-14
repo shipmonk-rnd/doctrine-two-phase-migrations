@@ -13,20 +13,20 @@ class MigrationGenerateCommandTest extends TestCase
 
     public function testCheck(): void
     {
+        $diffSql = 'SELECT 1';
+
         $migrationService = $this->createMock(MigrationService::class);
         $migrationService->expects(self::once())
-            ->method('shouldIncludeDropTableInDatabaseSync')
-            ->willReturn(false);
+            ->method('generateDiffSqls')
+            ->willReturn([$diffSql]);
 
         $migrationService->expects(self::once())
             ->method('generateMigrationFile')
-            ->with([
-                'CREATE TABLE entity (id VARCHAR(255) NOT NULL, PRIMARY KEY(id))',
-            ])
+            ->with([$diffSql])
             ->willReturn(new MigrationFile('fakepath', 'fakeversion'));
 
         $output = new BufferedOutput();
-        $command = new MigrationGenerateCommand($this->getEntityManager(), $migrationService);
+        $command = new MigrationGenerateCommand($migrationService);
         $command->run(new ArrayInput([]), $output);
 
         self::assertSame("Migration version fakeversion was generated\n", $output->fetch());

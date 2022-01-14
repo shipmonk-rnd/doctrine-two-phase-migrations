@@ -1,6 +1,8 @@
 /vendor
 /cache/*
 !/cache/.gitkeep
+/tmp/*
+!/tmp/.gitkeep
 /.idea
 /phpstan.neon
 /composer.lock
