@@ -12,6 +12,7 @@ use LogicException;
 use Nette\Utils\FileSystem;
 use Nette\Utils\Finder;
 use SplFileInfo;
+use Symfony\Component\Stopwatch\Stopwatch;
 use function date;
 use function implode;
 use function ksort;
@@ -26,6 +27,8 @@ class MigrationService
     private EntityManagerInterface $entityManager;
 
     private Connection $connection;
+
+    private Stopwatch $stopwatch;
 
     private string $migrationsDir;
 
@@ -47,6 +50,7 @@ class MigrationService
      */
     public function __construct(
         EntityManagerInterface $entityManager,
+        Stopwatch $stopwatch,
         string $migrationsDir,
         string $migrationClassNamespace = 'Migrations',
         string $migrationClassPrefix = 'Migration',
@@ -57,6 +61,7 @@ class MigrationService
     {
         $this->entityManager = $entityManager;
         $this->connection = $entityManager->getConnection();
+        $this->stopwatch = $stopwatch;
         $this->migrationsDir = $migrationsDir;
         $this->migrationClassNamespace = trim($migrationClassNamespace, '\\');
         $this->migrationClassPrefix = $migrationClassPrefix;
@@ -101,9 +106,11 @@ class MigrationService
         return new $fqn();
     }
 
-    public function executeMigration(string $version, string $phase): void
+    public function executeMigration(string $version, string $phase): MigrationRun
     {
         $migration = $this->getMigration($version);
+
+        $this->stopwatch->start($version);
 
         if ($phase === MigrationPhase::BEFORE) {
             $migration->before($this->connection);
@@ -115,7 +122,14 @@ class MigrationService
             throw new LogicException('Invalid phase given!');
         }
 
-        $this->markMigrationExecuted($version, $phase, new DateTimeImmutable());
+        $measurement = $this->stopwatch->stop($version);
+        $durationSeconds = $measurement->getDuration() / 1_000;
+
+        $run = new MigrationRun($version, $phase, $durationSeconds, new DateTimeImmutable());
+
+        $this->markMigrationExecuted($run);
+
+        return $run;
     }
 
     /**
@@ -161,12 +175,13 @@ class MigrationService
         return $versions;
     }
 
-    public function markMigrationExecuted(string $version, string $phase, DateTimeImmutable $executedAt): void
+    public function markMigrationExecuted(MigrationRun $migrationRun): void
     {
         $this->connection->insert($this->getMigrationTableName(), [
-            'version' => $version,
-            'phase' => $phase,
-            'executed' => $executedAt,
+            'version' => $migrationRun->getVersion(),
+            'phase' => $migrationRun->getPhase(),
+            'duration' => $migrationRun->getDuration(),
+            'executed' => $migrationRun->getFinishedAt(),
         ], [
             'executed' => 'datetimetz_immutable',
         ]);
@@ -185,6 +200,7 @@ class MigrationService
         $table->addColumn('version', 'string', ['length' => strlen($this->getNextVersion())]);
         $table->addColumn('phase', 'string', ['length' => 6]);
         $table->addColumn('executed', 'datetimetz_immutable');
+        $table->addColumn('duration', 'float');
         $table->setPrimaryKey(['version', 'phase']);
 
         foreach ($schema->toSql($this->connection->getDatabasePlatform()) as $sql) {

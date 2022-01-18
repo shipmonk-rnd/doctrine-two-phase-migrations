@@ -2,6 +2,7 @@
 
 namespace ShipMonk\Doctrine\Migration;
 
+use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
@@ -22,12 +23,13 @@ class MigrationRunCommandTest extends TestCase
 
         $migrationService->expects(self::once())
             ->method('executeMigration')
-            ->with('fakeversion', MigrationPhase::AFTER);
+            ->with('fakeversion', MigrationPhase::AFTER)
+            ->willReturn(new MigrationRun('fakeversion', MigrationPhase::AFTER, 1.233, new DateTimeImmutable()));
 
         $command = new MigrationRunCommand($migrationService);
 
         self::assertSame("No migration executed in phase after.\n", $this->runPhase($command, MigrationPhase::AFTER));
-        self::assertSame("Executing migration fakeversion phase after... done, 0.00 s elapsed.\n", $this->runPhase($command, MigrationPhase::AFTER));
+        self::assertSame("Executing migration fakeversion phase after... done, 1.233 s elapsed.\n", $this->runPhase($command, MigrationPhase::AFTER));
     }
 
     private function runPhase(MigrationRunCommand $command, string $phase): string

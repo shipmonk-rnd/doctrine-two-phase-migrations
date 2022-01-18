@@ -35,7 +35,9 @@ class MigrationSkipCommand extends Command
             $prepared = $this->migrationService->getPreparedVersions();
 
             foreach (array_diff($prepared, $executed) as $version) {
-                $this->migrationService->markMigrationExecuted($version, $phase, new DateTimeImmutable());
+                $run = new MigrationRun($version, $phase, 0, new DateTimeImmutable());
+
+                $this->migrationService->markMigrationExecuted($run);
                 $output->writeln("Migration {$version} phase {$phase} skipped.");
                 $skipped = true;
             }

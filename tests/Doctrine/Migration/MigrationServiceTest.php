@@ -5,6 +5,7 @@ namespace ShipMonk\Doctrine\Migration;
 use Doctrine\ORM\EntityManagerInterface;
 use Nette\Utils\FileSystem;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Stopwatch\Stopwatch;
 
 class MigrationServiceTest extends TestCase
 {
@@ -115,7 +116,7 @@ class MigrationServiceTest extends TestCase
         FileSystem::delete($migrationsDir);
         FileSystem::createDir($migrationsDir);
 
-        return new MigrationService($entityManager, $migrationsDir, 'Migrations', 'Migration', $excludedTables);
+        return new MigrationService($entityManager, new Stopwatch(), $migrationsDir, 'Migrations', 'Migration', $excludedTables);
     }
 
 }

@@ -7,7 +7,6 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use function array_diff;
-use function microtime;
 use function round;
 use function sprintf;
 
@@ -61,12 +60,11 @@ class MigrationRunCommand extends Command
 
     private function executeMigration(OutputInterface $output, string $version, string $phase): void
     {
-        $startTime = microtime(true);
         $output->write("Executing migration {$version} phase {$phase}... ");
 
-        $this->migrationService->executeMigration($version, $phase);
+        $run = $this->migrationService->executeMigration($version, $phase);
 
-        $elapsed = sprintf('%.2f', round(microtime(true) - $startTime, 2));
+        $elapsed = sprintf('%.3f', round($run->getDuration(), 3));
         $output->writeln("<info>done</info>, {$elapsed} s elapsed.");
     }
 
