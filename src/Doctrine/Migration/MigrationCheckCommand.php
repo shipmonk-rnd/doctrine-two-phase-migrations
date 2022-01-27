@@ -37,8 +37,8 @@ class MigrationCheckCommand extends Command
     public function run(InputInterface $input, OutputInterface $output): int
     {
         $exitCode = self::EXIT_OK;
-        $exitCode += $this->checkMigrationsExecuted($output);
-        $exitCode += $this->checkEntitiesSyncedWithDatabase($output);
+        $exitCode |= $this->checkMigrationsExecuted($output);
+        $exitCode |= $this->checkEntitiesSyncedWithDatabase($output);
 
         return $exitCode;
     }
