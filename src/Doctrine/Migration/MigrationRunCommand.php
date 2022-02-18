@@ -46,10 +46,14 @@ class MigrationRunCommand extends Command
             throw new LogicException('Can never happen for required non-array argument');
         }
 
-        $this->executeMigrations(
+        $migratedSomething = $this->executeMigrations(
             $output,
             $this->getPhasesToRun($phaseArgument),
         );
+
+        if (!$migratedSomething) {
+            $output->writeln("<comment>No migration executed (phase {$phaseArgument}).</comment>");
+        }
 
         return 0;
     }
@@ -57,7 +61,7 @@ class MigrationRunCommand extends Command
     /**
      * @param string[] $phases
      */
-    private function executeMigrations(OutputInterface $output, array $phases): void
+    private function executeMigrations(OutputInterface $output, array $phases): bool
     {
         $executed = [];
 
@@ -83,9 +87,7 @@ class MigrationRunCommand extends Command
             }
         }
 
-        if (!$migratedSomething) {
-            $output->writeln("<comment>No migration executed in phase {$phase}.</comment>");
-        }
+        return $migratedSomething;
     }
 
     private function executeMigration(OutputInterface $output, string $version, string $phase): void

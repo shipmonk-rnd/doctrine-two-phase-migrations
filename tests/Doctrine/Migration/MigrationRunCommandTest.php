@@ -26,7 +26,7 @@ class MigrationRunCommandTest extends TestCase
 
         $command = new MigrationRunCommand($migrationService);
 
-        self::assertSame("No migration executed in phase after.\n", $this->runPhase($command, MigrationPhase::BEFORE));
+        self::assertSame("No migration executed (phase before).\n", $this->runPhase($command, MigrationPhase::BEFORE));
         self::assertSame("Executing migration fakeversion phase after... done, 0.00 s elapsed.\n", $this->runPhase($command, MigrationPhase::AFTER));
     }
 
