@@ -2,11 +2,13 @@
 
 namespace ShipMonk\Doctrine\Migration;
 
+use LogicException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use function array_diff;
+use function in_array;
+use function is_string;
 use function microtime;
 use function round;
 use function sprintf;
@@ -15,6 +17,7 @@ class MigrationRunCommand extends Command
 {
 
     public const ARGUMENT_PHASE = 'phase';
+    public const PHASE_BOTH = 'both';
 
     private MigrationService $migrationService;
 
@@ -32,31 +35,59 @@ class MigrationRunCommand extends Command
         $this
             ->setName('migration:run')
             ->setDescription('Run all not executed migrations with specified phase')
-            ->addArgument(self::ARGUMENT_PHASE, InputArgument::REQUIRED, MigrationPhase::BEFORE . '|' . MigrationPhase::AFTER);
+            ->addArgument(self::ARGUMENT_PHASE, InputArgument::REQUIRED, MigrationPhase::BEFORE . '|' . MigrationPhase::AFTER . '|' . self::PHASE_BOTH);
     }
 
     public function run(InputInterface $input, OutputInterface $output): int
     {
-        $phase = $input->getArgument(self::ARGUMENT_PHASE);
+        $phaseArgument = $input->getArgument(self::ARGUMENT_PHASE);
 
-        if ($phase !== MigrationPhase::BEFORE && $phase !== MigrationPhase::AFTER) {
-            $output->writeln('<error>Unexpected phase given, use before|after</error>');
-            return 1;
+        if (!is_string($phaseArgument)) {
+            throw new LogicException('Can never happen for required non-array argument');
         }
 
-        $executed = $this->migrationService->getExecutedVersions($phase);
-        $prepared = $this->migrationService->getPreparedVersions();
-        $toBeExecuted = array_diff($prepared, $executed);
+        $migratedSomething = $this->executeMigrations(
+            $output,
+            $this->getPhasesToRun($phaseArgument),
+        );
 
-        foreach ($toBeExecuted as $version) {
-            $this->executeMigration($output, $version, $phase);
-        }
-
-        if ($toBeExecuted === []) {
-            $output->writeln("<comment>No migration executed in phase {$phase}.</comment>");
+        if (!$migratedSomething) {
+            $output->writeln("<comment>No migration executed (phase {$phaseArgument}).</comment>");
         }
 
         return 0;
+    }
+
+    /**
+     * @param string[] $phases
+     */
+    private function executeMigrations(OutputInterface $output, array $phases): bool
+    {
+        $executed = [];
+
+        if (in_array(MigrationPhase::BEFORE, $phases, true)) {
+            $executed[MigrationPhase::BEFORE] = $this->migrationService->getExecutedVersions(MigrationPhase::BEFORE);
+        }
+
+        if (in_array(MigrationPhase::AFTER, $phases, true)) {
+            $executed[MigrationPhase::AFTER] = $this->migrationService->getExecutedVersions(MigrationPhase::AFTER);
+        }
+
+        $preparedVersions = $this->migrationService->getPreparedVersions();
+        $migratedSomething = false;
+
+        foreach ($preparedVersions as $version) {
+            foreach ($phases as $phase) {
+                if (isset($executed[$phase][$version])) {
+                    continue;
+                }
+
+                $this->executeMigration($output, $version, $phase);
+                $migratedSomething = true;
+            }
+        }
+
+        return $migratedSomething;
     }
 
     private function executeMigration(OutputInterface $output, string $version, string $phase): void
@@ -68,6 +99,26 @@ class MigrationRunCommand extends Command
 
         $elapsed = sprintf('%.2f', round(microtime(true) - $startTime, 2));
         $output->writeln("<info>done</info>, {$elapsed} s elapsed.");
+    }
+
+    /**
+     * @return string[]
+     */
+    private function getPhasesToRun(string $phaseArgument): array
+    {
+        if ($phaseArgument === MigrationPhase::BEFORE) {
+            return [MigrationPhase::BEFORE];
+        }
+
+        if ($phaseArgument === MigrationPhase::AFTER) {
+            return [MigrationPhase::AFTER];
+        }
+
+        if ($phaseArgument === self::PHASE_BOTH) {
+            return [MigrationPhase::BEFORE, MigrationPhase::AFTER];
+        }
+
+        throw new LogicException('Unexpected phase argument');
     }
 
 }

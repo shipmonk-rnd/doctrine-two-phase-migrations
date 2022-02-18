@@ -83,3 +83,9 @@ Just be aware that those queries are not wrapped in transaction like it happens 
 bin/console migration:run before
 bin/console migration:run after
 ```
+
+When executing all the migrations (e.g. in test environment) you probably want to achieve one-by-one execution. You can do that by:
+
+```bash
+bin/console migration:run both
+```
