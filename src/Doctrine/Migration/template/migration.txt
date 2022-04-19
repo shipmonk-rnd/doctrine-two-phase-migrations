@@ -2,8 +2,8 @@
 
 namespace %namespace%;
 
-use ShipMonk\Doctrine\Migration\Migration;
 use Doctrine\DBAL\Connection;
+use ShipMonk\Doctrine\Migration\Migration;
 
 class Migration%version% implements Migration
 {
