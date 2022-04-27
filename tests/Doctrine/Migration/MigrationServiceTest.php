@@ -28,9 +28,9 @@ class MigrationServiceTest extends TestCase
         self::assertFalse($initialized2);
         self::assertSame(['CREATE TABLE entity (id VARCHAR(255) NOT NULL, PRIMARY KEY(id))'], $sqls);
 
-        self::assertSame([], $service->getExecutedVersions(MigrationPhase::BEFORE));
-        self::assertSame([], $service->getExecutedVersions(MigrationPhase::AFTER));
-        self::assertSame([], $service->getPreparedVersions());
+        self::assertEquals([], $service->getExecutedVersions(MigrationPhase::BEFORE));
+        self::assertEquals([], $service->getExecutedVersions(MigrationPhase::AFTER));
+        self::assertEquals([], $service->getPreparedVersions());
 
         $generatedFile = $service->generateMigrationFile($sqls);
         $generatedVersion = $generatedFile->getVersion();
@@ -42,28 +42,28 @@ class MigrationServiceTest extends TestCase
             self::assertStringContainsString($sql, $generatedContents);
         }
 
-        self::assertSame([], $service->getExecutedVersions(MigrationPhase::BEFORE));
-        self::assertSame([], $service->getExecutedVersions(MigrationPhase::AFTER));
-        self::assertSame([$generatedVersion => $generatedVersion], $service->getPreparedVersions());
+        self::assertEquals([], $service->getExecutedVersions(MigrationPhase::BEFORE));
+        self::assertEquals([], $service->getExecutedVersions(MigrationPhase::AFTER));
+        self::assertEquals([$generatedVersion => $generatedVersion], $service->getPreparedVersions());
         self::assertCount(0, $connection->executeQuery("SELECT * FROM {$migrationTableName}")->fetchAll());
 
         $service->executeMigration($generatedVersion, MigrationPhase::BEFORE);
 
-        self::assertSame([$generatedVersion => $generatedVersion], $service->getExecutedVersions(MigrationPhase::BEFORE));
-        self::assertSame([], $service->getExecutedVersions(MigrationPhase::AFTER));
-        self::assertSame([$generatedVersion => $generatedVersion], $service->getPreparedVersions());
+        self::assertEquals([$generatedVersion => $generatedVersion], $service->getExecutedVersions(MigrationPhase::BEFORE));
+        self::assertEquals([], $service->getExecutedVersions(MigrationPhase::AFTER));
+        self::assertEquals([$generatedVersion => $generatedVersion], $service->getPreparedVersions());
         self::assertCount(1, $connection->executeQuery("SELECT * FROM {$migrationTableName}")->fetchAll());
 
         $service->executeMigration($generatedVersion, MigrationPhase::AFTER);
 
-        self::assertSame([$generatedVersion => $generatedVersion], $service->getExecutedVersions(MigrationPhase::BEFORE));
-        self::assertSame([$generatedVersion => $generatedVersion], $service->getExecutedVersions(MigrationPhase::AFTER));
-        self::assertSame([$generatedVersion => $generatedVersion], $service->getPreparedVersions());
+        self::assertEquals([$generatedVersion => $generatedVersion], $service->getExecutedVersions(MigrationPhase::BEFORE));
+        self::assertEquals([$generatedVersion => $generatedVersion], $service->getExecutedVersions(MigrationPhase::AFTER));
+        self::assertEquals([$generatedVersion => $generatedVersion], $service->getPreparedVersions());
         self::assertCount(2, $connection->executeQuery("SELECT * FROM {$migrationTableName}")->fetchAll());
 
         $sqls2 = $service->generateDiffSqls();
 
-        self::assertSame([], $sqls2); // no diff after migration
+        self::assertEquals([], $sqls2); // no diff after migration
     }
 
     public function testInitialization(): void
@@ -89,21 +89,21 @@ class MigrationServiceTest extends TestCase
 
         $entityManager->getConnection()->executeQuery('CREATE TABLE excluded (id INT)');
 
-        self::assertSame([
+        self::assertEquals([
             'CREATE TABLE entity (id VARCHAR(255) NOT NULL, PRIMARY KEY(id))',
             'DROP TABLE excluded',
         ], $service->generateDiffSqls());
 
         $service = $this->createMigrationService($entityManager, ['excluded']);
 
-        self::assertSame([
+        self::assertEquals([
             'CREATE TABLE entity (id VARCHAR(255) NOT NULL, PRIMARY KEY(id))',
         ], $service->generateDiffSqls());
 
         // cannot create excluded table even when defined in metadata - it would always fail in migration:check
         $service = $this->createMigrationService($entityManager, ['excluded', 'entity']);
 
-        self::assertSame([], $service->generateDiffSqls());
+        self::assertEquals([], $service->generateDiffSqls());
     }
 
     /**

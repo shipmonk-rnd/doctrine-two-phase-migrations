@@ -119,6 +119,7 @@ class MigrationService
     }
 
     /**
+     * @phpstan-impure
      * @return array<string, string>
      */
     public function getPreparedVersions(): array
