@@ -9,7 +9,7 @@ parameters:
     paths:
         - src
         - tests
-    tmpDir: %rootDir%/../../../cache/phpstan/
+    tmpDir: cache/phpstan/
     checkMissingCallableSignature: true
     checkUninitializedProperties: true
     checkTooWideReturnTypesInProtectedAndPublicMethods: true
