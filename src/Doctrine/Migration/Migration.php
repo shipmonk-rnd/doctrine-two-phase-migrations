@@ -2,13 +2,11 @@
 
 namespace ShipMonk\Doctrine\Migration;
 
-use Doctrine\DBAL\Connection;
-
 interface Migration
 {
 
-    public function before(Connection $connection): void;
+    public function before(MigrationExecutor $executor): void;
 
-    public function after(Connection $connection): void;
+    public function after(MigrationExecutor $executor): void;
 
 }

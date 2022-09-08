@@ -27,6 +27,8 @@ class MigrationService
 
     private Connection $connection;
 
+    private MigrationExecutor $executor;
+
     private string $migrationsDir;
 
     private string $migrationClassNamespace;
@@ -47,6 +49,7 @@ class MigrationService
      */
     public function __construct(
         EntityManagerInterface $entityManager,
+        ?MigrationExecutor $migrationExecutor,
         string $migrationsDir,
         string $migrationClassNamespace = 'Migrations',
         string $migrationClassPrefix = 'Migration',
@@ -57,6 +60,7 @@ class MigrationService
     {
         $this->entityManager = $entityManager;
         $this->connection = $entityManager->getConnection();
+        $this->executor = $migrationExecutor ?? new MigrationDefaultExecutor($this->connection);
         $this->migrationsDir = $migrationsDir;
         $this->migrationClassNamespace = trim($migrationClassNamespace, '\\');
         $this->migrationClassPrefix = $migrationClassPrefix;
@@ -106,10 +110,10 @@ class MigrationService
         $migration = $this->getMigration($version);
 
         if ($phase === MigrationPhase::BEFORE) {
-            $migration->before($this->connection);
+            $migration->before($this->executor);
 
         } elseif ($phase === MigrationPhase::AFTER) {
-            $migration->after($this->connection);
+            $migration->after($this->executor);
 
         } else {
             throw new LogicException("Invalid phase {$phase} given!");
@@ -233,7 +237,7 @@ class MigrationService
         $statements = [];
 
         foreach ($sqls as $sql) {
-            $statements[] = sprintf("\$connection->executeQuery('%s');", str_replace("'", "\'", $sql));
+            $statements[] = sprintf("\$executor->executeQuery('%s');", str_replace("'", "\'", $sql));
         }
 
         $migrationsDir = $this->getMigrationsDir();
