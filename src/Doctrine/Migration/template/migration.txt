@@ -4,16 +4,17 @@ namespace %namespace%;
 
 use Doctrine\DBAL\Connection;
 use ShipMonk\Doctrine\Migration\Migration;
+use ShipMonk\Doctrine\Migration\MigrationExecutor;
 
 class Migration%version% implements Migration
 {
 
-    public function before(Connection $connection): void
+    public function before(MigrationExecutor $executor): void
     {
         %statements%
     }
 
-    public function after(Connection $connection): void
+    public function after(MigrationExecutor $executor): void
     {
     }
 

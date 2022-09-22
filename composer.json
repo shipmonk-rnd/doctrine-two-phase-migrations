@@ -5,7 +5,7 @@
     "require": {
         "nette/finder": "^2.4.0",
         "doctrine/annotations": "^1.13.0",
-        "doctrine/dbal": "^2.12.0",
+        "doctrine/dbal": "^2.13.1",
         "doctrine/orm": "^2.7.0",
         "symfony/console": "^4.0.0|^5.0.0"
     },
@@ -21,7 +21,8 @@
     "config": {
         "sort-packages": true,
         "allow-plugins": {
-            "dealerdirect/phpcodesniffer-composer-installer": true
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "ocramius/package-versions": true
         }
     },
     "autoload": {

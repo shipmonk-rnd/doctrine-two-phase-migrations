@@ -76,7 +76,7 @@ bin/console migration:skip
 
 #### Executing migration:
 
-Execution is performed without any interaction and does not fail nor warn when no migration is present for exection.
+Execution is performed without any interaction and does not fail nor warn when no migration is present for execution.
 Just be aware that those queries are not wrapped in transaction like it happens in `doctrine/migrations`.
 
 ```bash
@@ -89,3 +89,9 @@ When executing all the migrations (e.g. in test environment) you probably want t
 ```bash
 bin/console migration:run both
 ```
+
+#### Run custom code for each executed query:
+
+You can hook into migration execution by implementing `MigrationExecutor` interface and registering your implementations as a service.
+Implement `executeQuery()` to run checks or other code before/after each query.
+Interface of this method mimics interface of `Doctrine\DBAL\Connection::executeQuery()`.

@@ -115,7 +115,7 @@ class MigrationServiceTest extends TestCase
         FileSystem::delete($migrationsDir);
         FileSystem::createDir($migrationsDir);
 
-        return new MigrationService($entityManager, $migrationsDir, 'Migrations', 'Migration', $excludedTables);
+        return new MigrationService($entityManager, null, $migrationsDir, 'Migrations', 'Migration', $excludedTables);
     }
 
 }
