@@ -4,7 +4,6 @@ namespace ShipMonk\Doctrine\Migration;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Schema\Comparator;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
@@ -215,7 +214,7 @@ class MigrationService
         $this->excludeTablesFromSchema($fromSchema);
         $this->excludeTablesFromSchema($toSchema);
 
-        $schemaComparator = new Comparator();
+        $schemaComparator = $schemaManager->createComparator();
         $schemaDiff = $schemaComparator->compare($fromSchema, $toSchema);
         return $schemaDiff->toSql($platform);
     }
