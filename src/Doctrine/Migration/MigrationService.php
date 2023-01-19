@@ -215,7 +215,7 @@ class MigrationService
         $this->excludeTablesFromSchema($toSchema);
 
         $schemaComparator = $schemaManager->createComparator();
-        $schemaDiff = $schemaComparator->compare($fromSchema, $toSchema);
+        $schemaDiff = $schemaComparator->compareSchemas($fromSchema, $toSchema);
         return $schemaDiff->toSql($platform);
     }
 
