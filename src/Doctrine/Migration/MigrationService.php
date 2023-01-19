@@ -205,11 +205,11 @@ class MigrationService
     {
         $schemaTool = new SchemaTool($this->entityManager);
         $platform = $this->entityManager->getConnection()->getDatabasePlatform();
-        $classes = $this->entityManager->getMetadataFactory()->getAllMetadata();
+        $classMetadata = $this->entityManager->getMetadataFactory()->getAllMetadata();
 
         $schemaManager = $this->entityManager->getConnection()->getSchemaManager();
         $fromSchema = $schemaManager->createSchema();
-        $toSchema = $schemaTool->getSchemaFromMetadata($classes);
+        $toSchema = $schemaTool->getSchemaFromMetadata($classMetadata);
 
         $this->excludeTablesFromSchema($fromSchema);
         $this->excludeTablesFromSchema($toSchema);
