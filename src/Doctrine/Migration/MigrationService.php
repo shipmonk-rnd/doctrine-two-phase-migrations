@@ -4,6 +4,7 @@ namespace ShipMonk\Doctrine\Migration;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Schema\Comparator;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
@@ -14,6 +15,7 @@ use SplFileInfo;
 use function date;
 use function implode;
 use function ksort;
+use function method_exists;
 use function sprintf;
 use function str_replace;
 use function strlen;
@@ -214,7 +216,12 @@ class MigrationService
         $this->excludeTablesFromSchema($fromSchema);
         $this->excludeTablesFromSchema($toSchema);
 
-        $schemaComparator = $schemaManager->createComparator();
+        if (method_exists($schemaManager, 'createComparator')) {
+            $schemaComparator = $schemaManager->createComparator();
+        } else {
+            $schemaComparator = new Comparator();
+        }
+
         $schemaDiff = $schemaComparator->compareSchemas($fromSchema, $toSchema);
         return $schemaDiff->toSql($platform);
     }
