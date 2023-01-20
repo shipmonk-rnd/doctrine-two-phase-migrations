@@ -15,6 +15,7 @@ use SplFileInfo;
 use function date;
 use function implode;
 use function ksort;
+use function method_exists;
 use function sprintf;
 use function str_replace;
 use function strlen;
@@ -206,17 +207,22 @@ class MigrationService
     {
         $schemaTool = new SchemaTool($this->entityManager);
         $platform = $this->entityManager->getConnection()->getDatabasePlatform();
-        $classes = $this->entityManager->getMetadataFactory()->getAllMetadata();
+        $classMetadata = $this->entityManager->getMetadataFactory()->getAllMetadata();
 
         $schemaManager = $this->entityManager->getConnection()->getSchemaManager();
         $fromSchema = $schemaManager->createSchema();
-        $toSchema = $schemaTool->getSchemaFromMetadata($classes);
+        $toSchema = $schemaTool->getSchemaFromMetadata($classMetadata);
 
         $this->excludeTablesFromSchema($fromSchema);
         $this->excludeTablesFromSchema($toSchema);
 
-        $schemaComparator = new Comparator();
-        $schemaDiff = $schemaComparator->compare($fromSchema, $toSchema);
+        if (method_exists($schemaManager, 'createComparator')) {
+            $schemaComparator = $schemaManager->createComparator();
+        } else {
+            $schemaComparator = new Comparator();
+        }
+
+        $schemaDiff = $schemaComparator->compareSchemas($fromSchema, $toSchema);
         return $schemaDiff->toSql($platform);
     }
 

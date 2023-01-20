@@ -11,6 +11,7 @@
     },
     "require-dev": {
         "php": ">=7.4",
+        "composer/semver": "^3.3",
         "doctrine/persistence": "^2.5.0",
         "editorconfig-checker/editorconfig-checker": "10.3.0",
         "phpstan/phpstan": "1.6.2",
