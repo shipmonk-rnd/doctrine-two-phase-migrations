@@ -253,6 +253,7 @@
             <property name="groups" type="array">
                 <element value="uses"/>
                 <element value="constants"/>
+                <element value="enum cases"/>
                 <element value="properties"/>
                 <element value="constructor"/>
                 <element value="destructor"/>
