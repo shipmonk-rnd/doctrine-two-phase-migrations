@@ -35,7 +35,7 @@ jobs:
                 run: composer check
             -
                 name: Check unused dependencies
-                run: php composer-unused.phar
+                run: php composer-unused.phar --output-format=default
             -
                 name: Check shadow dependencies
                 run: php composer-require-checker.phar check composer.json
