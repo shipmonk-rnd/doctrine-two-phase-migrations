@@ -3,6 +3,7 @@
 namespace ShipMonk\Doctrine\Migration;
 
 use DateTimeImmutable;
+use DirectoryIterator;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\Comparator;
 use Doctrine\DBAL\Schema\Schema;
@@ -10,16 +11,19 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\Tools\SchemaTool;
 use LogicException;
-use Nette\Utils\FileSystem;
-use Nette\Utils\Finder;
 use SplFileInfo;
 use function date;
+use function file_get_contents;
+use function file_put_contents;
 use function implode;
+use function is_dir;
+use function is_file;
 use function ksort;
 use function method_exists;
 use function sprintf;
 use function str_replace;
 use function strlen;
+use function strpos;
 use function trim;
 
 class MigrationService
@@ -60,6 +64,14 @@ class MigrationService
         string $templateIndent = '        '
     )
     {
+        if (!is_dir($migrationsDir)) {
+            throw new LogicException("Given migration directory $migrationsDir is not a directory");
+        }
+
+        if (!is_file($templateFilePath)) {
+            throw new LogicException("Given template file $templateFilePath is not a file");
+        }
+
         $this->entityManager = $entityManager;
         $this->connection = $entityManager->getConnection();
         $this->executor = $migrationExecutor ?? new MigrationDefaultExecutor($this->connection);
@@ -90,7 +102,7 @@ class MigrationService
         return $this->excludedTables;
     }
 
-    private function getMigrationClassPrefix(): string
+    public function getMigrationClassPrefix(): string
     {
         return $this->migrationClassPrefix;
     }
@@ -132,9 +144,19 @@ class MigrationService
     {
         $migrations = [];
 
-        /** @var SplFileInfo $fileinfo */
-        foreach (Finder::findFiles($this->getMigrationClassPrefix() . '*.php')->in($this->migrationsDir) as $fileinfo) {
-            $version = str_replace($this->getMigrationClassPrefix(), '', $fileinfo->getBasename('.php'));
+        $migrationDirIterator = new DirectoryIterator($this->migrationsDir);
+
+        /** @var SplFileInfo $existingFile */
+        foreach ($migrationDirIterator as $existingFile) {
+            if (
+                !$existingFile->isFile()
+                || $existingFile->getExtension() !== 'php'
+                || strpos($existingFile->getFilename(), $this->getMigrationClassPrefix()) === false
+            ) {
+                continue;
+            }
+
+            $version = str_replace($this->getMigrationClassPrefix(), '', $existingFile->getBasename('.php'));
             $migrations[$version] = $version;
         }
 
@@ -253,14 +275,22 @@ class MigrationService
         $migrationClassNamespace = $this->getMigrationClassNamespace();
 
         $version = $this->getNextVersion();
-        $template = FileSystem::read($this->templateFilePath);
+        $template = file_get_contents($this->templateFilePath);
+
+        if ($template === false) {
+            throw new LogicException("Unable to read $this->templateFilePath");
+        }
+
         $template = str_replace('%namespace%', $migrationClassNamespace, $template);
         $template = str_replace('%version%', $version, $template);
         $template = str_replace('%statements%', implode("\n" . $this->templateIndent, $statements), $template);
 
         $filePath = $migrationsDir . '/' . $migrationClassPrefix . $version . '.php';
-        FileSystem::createDir($migrationsDir, 655);
-        FileSystem::write($filePath, $template);
+        $saved = file_put_contents($filePath, $template);
+
+        if ($saved === false) {
+            throw new LogicException("Unable to write new migration to $filePath");
+        }
 
         return new MigrationFile($filePath, $version);
     }

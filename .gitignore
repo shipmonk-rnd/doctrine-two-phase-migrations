@@ -6,3 +6,5 @@
 /.idea
 /phpstan.neon
 /composer.lock
+/composer-require-checker.phar
+/composer-unused.phar

@@ -3,8 +3,15 @@
 namespace ShipMonk\Doctrine\Migration;
 
 use Doctrine\ORM\EntityManagerInterface;
+use LogicException;
 use Nette\Utils\FileSystem;
 use PHPUnit\Framework\TestCase;
+use function array_map;
+use function glob;
+use function is_dir;
+use function mkdir;
+use function rmdir;
+use function touch;
 
 class MigrationServiceTest extends TestCase
 {
@@ -82,6 +89,19 @@ class MigrationServiceTest extends TestCase
         self::assertTrue($table->hasPrimaryKey());
     }
 
+    public function testGetPreparedVersions(): void
+    {
+        $entityManager = $this->createEntityManager();
+        $service = $this->createMigrationService($entityManager, []);
+        self::assertSame([], $service->getPreparedVersions());
+
+        touch($this->getMigrationsTestDir() . '/' . $service->getMigrationClassPrefix() . 'fakeversion.php');
+        touch($this->getMigrationsTestDir() . '/' . $service->getMigrationClassPrefix() . 'ignored.extension');
+        touch($this->getMigrationsTestDir() . '/InvalidClassPrefix.php');
+
+        self::assertSame(['fakeversion' => 'fakeversion'], $service->getPreparedVersions());
+    }
+
     public function testExcludedTables(): void
     {
         $entityManager = $this->createEntityManager();
@@ -111,11 +131,27 @@ class MigrationServiceTest extends TestCase
      */
     private function createMigrationService(EntityManagerInterface $entityManager, array $excludedTables = []): MigrationService
     {
-        $migrationsDir = __DIR__ . '/../../../tmp/migrations';
-        FileSystem::delete($migrationsDir);
-        FileSystem::createDir($migrationsDir);
+        $migrationsDir = $this->getMigrationsTestDir();
+
+        if (is_dir($migrationsDir)) {
+            $filesToDelete = glob("$migrationsDir/*.*");
+
+            if ($filesToDelete === false) {
+                throw new LogicException("Failed to glob $migrationsDir");
+            }
+
+            array_map('unlink', $filesToDelete);
+            rmdir($migrationsDir);
+        }
+
+        mkdir($migrationsDir);
 
         return new MigrationService($entityManager, null, $migrationsDir, 'Migrations', 'Migration', $excludedTables);
+    }
+
+    private function getMigrationsTestDir(): string
+    {
+        return __DIR__ . '/../../../tmp/migrations';
     }
 
 }
