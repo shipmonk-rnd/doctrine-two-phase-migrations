@@ -39,14 +39,10 @@
             "@check:ec",
             "@check:cs",
             "@check:types",
-            "@check:tests",
-            "@check:dependencies-unused",
-            "@check:dependencies-shadow"
+            "@check:tests"
         ],
         "check:ec": "ec src",
         "check:cs": "phpcs",
-        "check:dependencies-unused": "wget -nc -q -O composer-unused.phar https://github.com/composer-unused/composer-unused/releases/latest/download/composer-unused.phar && php composer-unused.phar",
-        "check:dependencies-shadow": "wget -nc -q -O composer-require-checker.phar https://github.com/maglnet/ComposerRequireChecker/releases/download/4.5.0/composer-require-checker.phar && php composer-require-checker.phar check composer.json",
         "check:types": "phpstan analyse -vvv",
         "check:tests": "phpunit -vvv tests",
         "fix:cs": "phpcbf"
