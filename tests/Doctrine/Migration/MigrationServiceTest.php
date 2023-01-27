@@ -4,9 +4,9 @@ namespace ShipMonk\Doctrine\Migration;
 
 use Doctrine\ORM\EntityManagerInterface;
 use LogicException;
-use Nette\Utils\FileSystem;
 use PHPUnit\Framework\TestCase;
 use function array_map;
+use function file_get_contents;
 use function glob;
 use function is_dir;
 use function mkdir;
@@ -41,7 +41,9 @@ class MigrationServiceTest extends TestCase
 
         $generatedFile = $service->generateMigrationFile($sqls);
         $generatedVersion = $generatedFile->getVersion();
-        $generatedContents = FileSystem::read($generatedFile->getFilePath());
+        $generatedContents = file_get_contents($generatedFile->getFilePath());
+
+        self::assertNotFalse($generatedContents);
 
         require $generatedFile->getFilePath();
 

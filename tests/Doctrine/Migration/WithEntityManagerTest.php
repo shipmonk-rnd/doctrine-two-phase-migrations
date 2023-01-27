@@ -7,7 +7,8 @@ use Doctrine\ORM\Configuration;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\UnderscoreNamingStrategy;
-use Nette\Utils\FileSystem;
+use function is_file;
+use function unlink;
 
 trait WithEntityManagerTest
 {
@@ -17,7 +18,10 @@ trait WithEntityManagerTest
         $tmpDir = __DIR__ . '/../../../tmp';
 
         $databaseFile = $tmpDir . '/db.sqlite';
-        FileSystem::delete($databaseFile);
+
+        if (is_file($databaseFile)) {
+            unlink($databaseFile);
+        }
 
         $config = new Configuration();
         $config->setProxyNamespace('Tmp\Doctrine\Tests\Proxies');
