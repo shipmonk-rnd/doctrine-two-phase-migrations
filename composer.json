@@ -13,12 +13,12 @@
     "require-dev": {
         "composer/semver": "^3.3",
         "doctrine/persistence": "^2.5.0",
-        "editorconfig-checker/editorconfig-checker": "10.3.0",
-        "phpstan/phpstan": "1.6.2",
-        "phpstan/phpstan-phpunit": "1.1.1",
-        "phpstan/phpstan-strict-rules": "1.2.0",
-        "phpunit/phpunit": "~9.5.20",
-        "slevomat/coding-standard": "7.1"
+        "editorconfig-checker/editorconfig-checker": "^10.3.0",
+        "phpstan/phpstan": "^1.9.14",
+        "phpstan/phpstan-phpunit": "^1.3.3",
+        "phpstan/phpstan-strict-rules": "^1.4.5",
+        "phpunit/phpunit": "^9.5.28",
+        "slevomat/coding-standard": "^8.8.0"
     },
     "config": {
         "sort-packages": true,

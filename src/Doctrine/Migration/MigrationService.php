@@ -7,6 +7,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\Comparator;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\Tools\SchemaTool;
 use LogicException;
 use Nette\Utils\FileSystem;
@@ -207,6 +208,7 @@ class MigrationService
     {
         $schemaTool = new SchemaTool($this->entityManager);
         $platform = $this->entityManager->getConnection()->getDatabasePlatform();
+        /** @var list<ClassMetadata<object>> $classMetadata */
         $classMetadata = $this->entityManager->getMetadataFactory()->getAllMetadata();
 
         $schemaManager = $this->entityManager->getConnection()->getSchemaManager();
