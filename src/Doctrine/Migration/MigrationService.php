@@ -17,6 +17,7 @@ use Throwable;
 use function file_get_contents;
 use function file_put_contents;
 use function implode;
+use function is_a;
 use function ksort;
 use function method_exists;
 use function sprintf;
@@ -260,7 +261,7 @@ class MigrationService
     {
         $platform = $this->connection->getDatabasePlatform();
 
-        return $platform->getName() === 'postgresql' // bypass PostgreSqlPlatform => PostgreSQLPlatform rename in doctrine/dbal
+        return is_a($platform, '\Doctrine\DBAL\Platforms\PostgreSQLPlatform') // bypass PostgreSqlPlatform => PostgreSQLPlatform rename in doctrine/dbal v3
             || $platform instanceof SQLServerPlatform;
     }
 

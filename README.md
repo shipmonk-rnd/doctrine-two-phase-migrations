@@ -38,7 +38,7 @@ services:
         $migrationClassNamespace: 'YourCompany\Migrations'
         $migrationTableName: 'doctrine_migration'
         $migrationClassPrefix: 'Migration' # will be appended with date('YmDHis') by default
-        $excludedTables: ['my_tmp_table'] # is always appended with $migrationTableName
+        $excludedTables: ['my_tmp_table'] # migration table ($migrationTableName) is always added to excluded tables automatically
         $templateFilePath: "%kernel.project_dir%/migrations/my-template.txt" # customizable according to your coding style
         $templateIndent: "\t\t" # defaults to spaces
 ```

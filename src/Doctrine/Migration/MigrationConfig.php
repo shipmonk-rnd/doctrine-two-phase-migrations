@@ -39,12 +39,14 @@ class MigrationConfig
         ?string $templateIndent = null
     )
     {
+        $templateFilePathToUse = $templateFilePath ?? __DIR__ . '/template/migration.txt';
+
         if (!is_dir($migrationsDir)) {
             throw new LogicException("Given migration directory $migrationsDir is not a directory");
         }
 
-        if ($templateFilePath !== null && !is_file($templateFilePath)) {
-            throw new LogicException("Given template file $templateFilePath is not a file");
+        if (!is_file($templateFilePathToUse)) {
+            throw new LogicException("Template file $templateFilePathToUse is not a file");
         }
 
         $this->migrationsDir = $migrationsDir;
@@ -53,7 +55,7 @@ class MigrationConfig
         $this->migrationClassPrefix = $migrationClassPrefix ?? 'Migration';
         $this->excludedTables = $excludedTables ?? [];
         $this->excludedTables[] = $this->getMigrationTableName();
-        $this->templateFilePath = $templateFilePath ?? __DIR__ . '/template/migration.txt';
+        $this->templateFilePath = $templateFilePathToUse;
         $this->templateIndent = $templateIndent ?? '        ';
     }
 
