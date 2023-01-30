@@ -17,7 +17,7 @@ composer require shipmonk/doctrine-two-phase-migrations
 
 ### Configuration in symfony application:
 
-If your `Doctrine\ORM\EntityManagerInterface` and `Doctrine\DBAL\Connection` is autowired, just register few services in your DIC and tag the commands:
+If your `Doctrine\ORM\EntityManagerInterface` is autowired, just register few services in your DIC and tag the commands:
 ```yml
 _instanceof:
     Symfony\Component\Console\Command\Command:
@@ -25,15 +25,22 @@ _instanceof:
             - console.command
 
 services:
-    ShipMonk\Doctrine\Migration\MigrationInitCommand:
-    ShipMonk\Doctrine\Migration\MigrationRunCommand:
-    ShipMonk\Doctrine\Migration\MigrationSkipCommand:
-    ShipMonk\Doctrine\Migration\MigrationCheckCommand:
-    ShipMonk\Doctrine\Migration\MigrationGenerateCommand:
+    ShipMonk\Doctrine\Migration\Command\MigrationInitCommand:
+    ShipMonk\Doctrine\Migration\Command\MigrationRunCommand:
+    ShipMonk\Doctrine\Migration\Command\MigrationSkipCommand:
+    ShipMonk\Doctrine\Migration\Command\MigrationCheckCommand:
+    ShipMonk\Doctrine\Migration\Command\MigrationGenerateCommand:
     ShipMonk\Doctrine\Migration\MigrationService:
-        $includeDropTableInDatabaseSync: false
+    ShipMonk\Doctrine\Migration\MigrationConfig:
         $migrationsDir: "%kernel.project_dir%/migrations"
+
+    # more optional parameters:
         $migrationClassNamespace: 'YourCompany\Migrations'
+        $migrationTableName: 'doctrine_migration'
+        $migrationClassPrefix: 'Migration' # will be appended with date('YmDHis') by default
+        $excludedTables: ['my_tmp_table'] # migration table ($migrationTableName) is always added to excluded tables automatically
+        $templateFilePath: "%kernel.project_dir%/migrations/my-template.txt" # customizable according to your coding style
+        $templateIndent: "\t\t" # defaults to spaces
 ```
 
 ### Commands:
@@ -90,8 +97,22 @@ When executing all the migrations (e.g. in test environment) you probably want t
 bin/console migration:run both
 ```
 
+### Advanced usage
+
 #### Run custom code for each executed query:
 
 You can hook into migration execution by implementing `MigrationExecutor` interface and registering your implementations as a service.
 Implement `executeQuery()` to run checks or other code before/after each query.
 Interface of this method mimics interface of `Doctrine\DBAL\Connection::executeQuery()`.
+
+#### Run all queries within transaction:
+
+Each generated migration contains method specifying if it will be executed within transaction or not.
+You can easily change that according your needs.
+By default, transactional execution is enabled only for plaforms supporting DDL operations within transaction (PostgreSQL, SQLServer).
+
+### Differences from doctrine/migrations
+
+This library is aiming to provide only core functionality needed for safe migrations within rolling-update deployments.
+We try to keep it as lightweight as possible, we do not plan to copy features from doctrine/migrations.
+

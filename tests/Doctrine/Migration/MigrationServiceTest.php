@@ -24,7 +24,7 @@ class MigrationServiceTest extends TestCase
         $connection = $entityManager->getConnection();
         $service = $this->createMigrationService($entityManager);
 
-        $migrationTableName = $service->getMigrationTableName();
+        $migrationTableName = $service->getConfig()->getMigrationTableName();
 
         $initialized1 = $service->initializeMigrationTable();
         $initialized2 = $service->initializeMigrationTable(); // double init should not fail
@@ -75,6 +75,51 @@ class MigrationServiceTest extends TestCase
         self::assertEquals([], $sqls2); // no diff after migration
     }
 
+    public function testTransactionalExecution(): void
+    {
+        $logger = new CachingSqlLogger();
+        $versionProvider = new class implements MigrationVersionProvider {
+
+            private int $lastVersion = 0;
+
+            public function getNextVersion(): string
+            {
+                return (string) ++$this->lastVersion;
+            }
+
+        };
+        $entityManager = $this->createEntityManager();
+
+        $nonTransactionalService = $this->createMigrationService($entityManager, [], false, $versionProvider);
+        $transactionalService = $this->createMigrationService($entityManager, [], true, $versionProvider);
+
+        $transactionalService->initializeMigrationTable();
+
+        $transactionalMigrationFile = $transactionalService->generateMigrationFile([]);
+        $nonTransactionalMigrationFile = $nonTransactionalService->generateMigrationFile([]);
+
+        require $transactionalMigrationFile->getFilePath();
+        require $nonTransactionalMigrationFile->getFilePath();
+
+        $entityManager->getConnection()->getConfiguration()->setSQLLogger($logger);
+
+        $transactionalService->executeMigration($transactionalMigrationFile->getVersion(), MigrationPhase::BEFORE);
+
+        self::assertSame([
+            '"START TRANSACTION"',
+            'INSERT INTO migration (version, phase, executed) VALUES (?, ?, ?)',
+            '"COMMIT"',
+        ], $logger->getQueriesPerformed());
+
+        $logger->clean();
+
+        $nonTransactionalService->executeMigration($nonTransactionalMigrationFile->getVersion(), MigrationPhase::BEFORE);
+
+        self::assertSame([
+            'INSERT INTO migration (version, phase, executed) VALUES (?, ?, ?)',
+        ], $logger->getQueriesPerformed());
+    }
+
     public function testInitialization(): void
     {
         $entityManager = $this->createEntityManager();
@@ -82,7 +127,7 @@ class MigrationServiceTest extends TestCase
 
         self::assertTrue($service->initializeMigrationTable());
 
-        $migrationTableName = $service->getMigrationTableName();
+        $migrationTableName = $service->getConfig()->getMigrationTableName();
         $table = $entityManager->getConnection()->getSchemaManager()->listTableDetails($migrationTableName);
 
         self::assertTrue($table->hasColumn('version'));
@@ -97,8 +142,8 @@ class MigrationServiceTest extends TestCase
         $service = $this->createMigrationService($entityManager, []);
         self::assertSame([], $service->getPreparedVersions());
 
-        touch($this->getMigrationsTestDir() . '/' . $service->getMigrationClassPrefix() . 'fakeversion.php');
-        touch($this->getMigrationsTestDir() . '/' . $service->getMigrationClassPrefix() . 'ignored.extension');
+        touch($this->getMigrationsTestDir() . '/' . $service->getConfig()->getMigrationClassPrefix() . 'fakeversion.php');
+        touch($this->getMigrationsTestDir() . '/' . $service->getConfig()->getMigrationClassPrefix() . 'ignored.extension');
         touch($this->getMigrationsTestDir() . '/InvalidClassPrefix.php');
 
         self::assertSame(['fakeversion' => 'fakeversion'], $service->getPreparedVersions());
@@ -131,7 +176,12 @@ class MigrationServiceTest extends TestCase
     /**
      * @param string[] $excludedTables
      */
-    private function createMigrationService(EntityManagerInterface $entityManager, array $excludedTables = []): MigrationService
+    private function createMigrationService(
+        EntityManagerInterface $entityManager,
+        array $excludedTables = [],
+        bool $transactional = false,
+        ?MigrationVersionProvider $versionProvider = null
+    ): MigrationService
     {
         $migrationsDir = $this->getMigrationsTestDir();
 
@@ -148,7 +198,22 @@ class MigrationServiceTest extends TestCase
 
         mkdir($migrationsDir);
 
-        return new MigrationService($entityManager, null, $migrationsDir, 'Migrations', 'Migration', $excludedTables);
+        return new MigrationService(
+            $entityManager,
+            new MigrationConfig(
+                $migrationsDir,
+                null,
+                null,
+                null,
+                $excludedTables,
+                $transactional
+                    ? __DIR__ . '/templates/transactional.txt'
+                    : __DIR__ . '/templates/non-transactional.txt',
+                null,
+            ),
+            null,
+            $versionProvider,
+        );
     }
 
     private function getMigrationsTestDir(): string
