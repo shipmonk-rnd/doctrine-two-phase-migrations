@@ -5,7 +5,6 @@ namespace ShipMonk\Doctrine\Migration;
 use DateTimeImmutable;
 use DirectoryIterator;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Platforms\SQLServerPlatform;
 use Doctrine\DBAL\Schema\Comparator;
 use Doctrine\DBAL\Schema\Schema;
@@ -261,7 +260,7 @@ class MigrationService
     {
         $platform = $this->connection->getDatabasePlatform();
 
-        return $platform instanceof PostgreSQLPlatform
+        return $platform->getName() === 'postgresql' // bypass PostgreSqlPlatform => PostgreSQLPlatform rename in doctrine/dbal
             || $platform instanceof SQLServerPlatform;
     }
 
