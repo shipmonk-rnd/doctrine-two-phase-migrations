@@ -20,8 +20,3 @@ parameters:
             path: src/Doctrine/Migration/MigrationService.php
             reportUnmatched: false # depends on dbal version used, we support wider range
             count: 1
-        -
-            message: "#PHPDoc tag @var for variable \\$classMetadata contains generic type Doctrine\\\\ORM\\\\Mapping\\\\ClassMetadata<object> but class Doctrine\\\\ORM\\\\Mapping\\\\ClassMetadata is not generic\\.#"
-            path: src/Doctrine/Migration/MigrationService.php
-            reportUnmatched: false # depends on dbal version used, we support wider range
-            count: 1
