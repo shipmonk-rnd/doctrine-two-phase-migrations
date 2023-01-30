@@ -14,11 +14,16 @@ class Entity
      * @ORM\Id
      * @ORM\Column(type="string", nullable=false)
      */
-    public string $id;
+    private string $id;
 
     public function __construct(string $id)
     {
         $this->id = $id;
+    }
+
+    public function getId(): string
+    {
+        return $this->id;
     }
 
 }

@@ -4,6 +4,7 @@ includes:
     - ./vendor/phpstan/phpstan-strict-rules/rules.neon
     - ./vendor/phpstan/phpstan-phpunit/extension.neon
     - ./vendor/phpstan/phpstan-phpunit/rules.neon
+    - ./vendor/shipmonk/phpstan-rules/rules.neon
 
 parameters:
     paths:
@@ -16,11 +17,6 @@ parameters:
     ignoreErrors:
         -
             message: "#Call to function method_exists\\(\\) with Doctrine\\\\DBAL\\\\Schema\\\\AbstractSchemaManager and 'createComparator' will always evaluate to true.#"
-            path: src/Doctrine/Migration/MigrationService.php
-            reportUnmatched: false # depends on dbal version used, we support wider range
-            count: 1
-        -
-            message: "#PHPDoc tag @var for variable \\$classMetadata contains generic type Doctrine\\\\ORM\\\\Mapping\\\\ClassMetadata<object> but class Doctrine\\\\ORM\\\\Mapping\\\\ClassMetadata is not generic\\.#"
             path: src/Doctrine/Migration/MigrationService.php
             reportUnmatched: false # depends on dbal version used, we support wider range
             count: 1

@@ -9,11 +9,11 @@ use Doctrine\DBAL\Platforms\SQLServerPlatform;
 use Doctrine\DBAL\Schema\Comparator;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\Tools\SchemaTool;
 use LogicException;
 use SplFileInfo;
 use Throwable;
+use function array_values;
 use function file_get_contents;
 use function file_put_contents;
 use function implode;
@@ -58,7 +58,7 @@ class MigrationService
 
     private function getMigration(string $version): Migration
     {
-        /** @var class-string<Migration> $fqn */
+        /** @var class-string<Migration> $fqn allow-narrowing */
         $fqn = '\\' . $this->config->getMigrationClassNamespace() . '\\' . $this->config->getMigrationClassPrefix() . $version;
         return new $fqn();
     }
@@ -189,12 +189,11 @@ class MigrationService
     {
         $schemaTool = new SchemaTool($this->entityManager);
         $platform = $this->entityManager->getConnection()->getDatabasePlatform();
-        /** @var list<ClassMetadata<object>> $classMetadata */
         $classMetadata = $this->entityManager->getMetadataFactory()->getAllMetadata();
 
         $schemaManager = $this->entityManager->getConnection()->getSchemaManager();
         $fromSchema = $schemaManager->createSchema();
-        $toSchema = $schemaTool->getSchemaFromMetadata($classMetadata);
+        $toSchema = $schemaTool->getSchemaFromMetadata(array_values($classMetadata));
 
         $this->excludeTablesFromSchema($fromSchema);
         $this->excludeTablesFromSchema($toSchema);

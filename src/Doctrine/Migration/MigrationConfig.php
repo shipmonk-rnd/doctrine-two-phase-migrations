@@ -27,7 +27,7 @@ class MigrationConfig
     private string $templateIndent;
 
     /**
-     * @param string[] $excludedTables
+     * @param string[]|null $excludedTables
      */
     public function __construct(
         string $migrationsDir,
