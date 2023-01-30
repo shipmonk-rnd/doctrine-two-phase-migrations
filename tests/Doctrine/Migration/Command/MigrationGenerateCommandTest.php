@@ -1,8 +1,11 @@
 <?php declare(strict_types = 1);
 
-namespace ShipMonk\Doctrine\Migration;
+namespace ShipMonk\Doctrine\Migration\Command;
 
 use PHPUnit\Framework\TestCase;
+use ShipMonk\Doctrine\Migration\MigrationFile;
+use ShipMonk\Doctrine\Migration\MigrationService;
+use ShipMonk\Doctrine\Migration\WithEntityManagerTest;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 

@@ -1,7 +1,9 @@
 <?php declare(strict_types = 1);
 
-namespace ShipMonk\Doctrine\Migration;
+namespace ShipMonk\Doctrine\Migration\Command;
 
+use ShipMonk\Doctrine\Migration\MigrationPhase;
+use ShipMonk\Doctrine\Migration\MigrationService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -59,7 +61,7 @@ class MigrationCheckCommand extends Command
     private function checkMigrationsExecuted(OutputInterface $output): int
     {
         $exitCode = self::EXIT_OK;
-        $migrationsDir = $this->migrationService->getMigrationsDir();
+        $migrationsDir = $this->migrationService->getConfig()->getMigrationsDirectory();
 
         foreach ([MigrationPhase::BEFORE, MigrationPhase::AFTER] as $phase) {
             $executed = $this->migrationService->getExecutedVersions($phase);

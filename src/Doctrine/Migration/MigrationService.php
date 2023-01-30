@@ -5,6 +5,8 @@ namespace ShipMonk\Doctrine\Migration;
 use DateTimeImmutable;
 use DirectoryIterator;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
+use Doctrine\DBAL\Platforms\SQLServerPlatform;
 use Doctrine\DBAL\Schema\Comparator;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\ORM\EntityManagerInterface;
@@ -12,19 +14,15 @@ use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\Tools\SchemaTool;
 use LogicException;
 use SplFileInfo;
-use function date;
+use Throwable;
 use function file_get_contents;
 use function file_put_contents;
 use function implode;
-use function is_dir;
-use function is_file;
 use function ksort;
 use function method_exists;
 use function sprintf;
 use function str_replace;
-use function strlen;
 use function strpos;
-use function trim;
 
 class MigrationService
 {
@@ -33,89 +31,35 @@ class MigrationService
 
     private Connection $connection;
 
+    private MigrationConfig $config;
+
     private MigrationExecutor $executor;
 
-    private string $migrationsDir;
+    private MigrationVersionProvider $versionProvider;
 
-    private string $migrationClassNamespace;
-
-    private string $migrationClassPrefix;
-
-    /**
-     * @var string[]
-     */
-    private array $excludedTables;
-
-    private string $templateFilePath;
-
-    private string $templateIndent;
-
-    /**
-     * @param string[] $excludedTables
-     */
     public function __construct(
         EntityManagerInterface $entityManager,
-        ?MigrationExecutor $migrationExecutor,
-        string $migrationsDir,
-        string $migrationClassNamespace = 'Migrations',
-        string $migrationClassPrefix = 'Migration',
-        array $excludedTables = [],
-        string $templateFilePath = __DIR__ . '/template/migration.txt',
-        string $templateIndent = '        '
+        MigrationConfig $config,
+        ?MigrationExecutor $executor = null,
+        ?MigrationVersionProvider $versionProvider = null
     )
     {
-        if (!is_dir($migrationsDir)) {
-            throw new LogicException("Given migration directory $migrationsDir is not a directory");
-        }
-
-        if (!is_file($templateFilePath)) {
-            throw new LogicException("Given template file $templateFilePath is not a file");
-        }
-
         $this->entityManager = $entityManager;
         $this->connection = $entityManager->getConnection();
-        $this->executor = $migrationExecutor ?? new MigrationDefaultExecutor($this->connection);
-        $this->migrationsDir = $migrationsDir;
-        $this->migrationClassNamespace = trim($migrationClassNamespace, '\\');
-        $this->migrationClassPrefix = $migrationClassPrefix;
-        $this->excludedTables = $excludedTables;
-        $this->excludedTables[] = $this->getMigrationTableName();
-        $this->templateFilePath = $templateFilePath;
-        $this->templateIndent = $templateIndent;
+        $this->config = $config;
+        $this->executor = $executor ?? new MigrationDefaultExecutor($this->connection);
+        $this->versionProvider = $versionProvider ?? new MigrationDefaultVersionProvider();
     }
 
-    public function getMigrationsDir(): string
+    public function getConfig(): MigrationConfig
     {
-        return $this->migrationsDir;
-    }
-
-    private function getMigrationClassNamespace(): string
-    {
-        return $this->migrationClassNamespace;
-    }
-
-    /**
-     * @return string[]
-     */
-    public function getExcludedTables(): array
-    {
-        return $this->excludedTables;
-    }
-
-    public function getMigrationClassPrefix(): string
-    {
-        return $this->migrationClassPrefix;
-    }
-
-    public function getMigrationTableName(): string
-    {
-        return 'migration';
+        return $this->config;
     }
 
     private function getMigration(string $version): Migration
     {
         /** @var class-string<Migration> $fqn */
-        $fqn = '\\' . $this->getMigrationClassNamespace() . '\\' . $this->getMigrationClassPrefix() . $version;
+        $fqn = '\\' . $this->config->getMigrationClassNamespace() . '\\' . $this->config->getMigrationClassPrefix() . $version;
         return new $fqn();
     }
 
@@ -123,12 +67,26 @@ class MigrationService
     {
         $migration = $this->getMigration($version);
 
+        if ($migration->isTransactional()) {
+            try {
+                $this->connection->beginTransaction();
+                $this->doExecuteMigration($migration, $version, $phase);
+                $this->connection->commit();
+            } catch (Throwable $e) {
+                $this->connection->rollBack();
+                throw $e;
+            }
+        } else {
+            $this->doExecuteMigration($migration, $version, $phase);
+        }
+    }
+
+    private function doExecuteMigration(Migration $migration, string $version, string $phase): void
+    {
         if ($phase === MigrationPhase::BEFORE) {
             $migration->before($this->executor);
-
         } elseif ($phase === MigrationPhase::AFTER) {
             $migration->after($this->executor);
-
         } else {
             throw new LogicException("Invalid phase {$phase} given!");
         }
@@ -143,20 +101,21 @@ class MigrationService
     public function getPreparedVersions(): array
     {
         $migrations = [];
+        $classPrefix = $this->config->getMigrationClassPrefix();
 
-        $migrationDirIterator = new DirectoryIterator($this->migrationsDir);
+        $migrationDirIterator = new DirectoryIterator($this->config->getMigrationsDirectory());
 
         /** @var SplFileInfo $existingFile */
         foreach ($migrationDirIterator as $existingFile) {
             if (
                 !$existingFile->isFile()
                 || $existingFile->getExtension() !== 'php'
-                || strpos($existingFile->getFilename(), $this->getMigrationClassPrefix()) === false
+                || strpos($existingFile->getFilename(), $classPrefix) === false
             ) {
                 continue;
             }
 
-            $version = str_replace($this->getMigrationClassPrefix(), '', $existingFile->getBasename('.php'));
+            $version = str_replace($classPrefix, '', $existingFile->getBasename('.php'));
             $migrations[$version] = $version;
         }
 
@@ -192,7 +151,7 @@ class MigrationService
 
     public function markMigrationExecuted(string $version, string $phase, DateTimeImmutable $executedAt): void
     {
-        $this->connection->insert($this->getMigrationTableName(), [
+        $this->connection->insert($this->config->getMigrationTableName(), [
             'version' => $version,
             'phase' => $phase,
             'executed' => $executedAt,
@@ -203,7 +162,7 @@ class MigrationService
 
     public function initializeMigrationTable(): bool
     {
-        $migrationTableName = $this->getMigrationTableName();
+        $migrationTableName = $this->config->getMigrationTableName();
 
         if ($this->connection->getSchemaManager()->tablesExist([$migrationTableName])) {
             return false;
@@ -211,7 +170,7 @@ class MigrationService
 
         $schema = new Schema();
         $table = $schema->createTable($migrationTableName);
-        $table->addColumn('version', 'string', ['length' => strlen($this->getNextVersion())]);
+        $table->addColumn('version', 'string');
         $table->addColumn('phase', 'string', ['length' => 6]);
         $table->addColumn('executed', 'datetimetz_immutable');
         $table->setPrimaryKey(['version', 'phase']);
@@ -252,7 +211,7 @@ class MigrationService
 
     private function excludeTablesFromSchema(Schema $schema): void
     {
-        foreach ($this->getExcludedTables() as $table) {
+        foreach ($this->config->getExcludedTables() as $table) {
             if ($schema->hasTable($table)) {
                 $schema->dropTable($table);
             }
@@ -270,20 +229,23 @@ class MigrationService
             $statements[] = sprintf("\$executor->executeQuery('%s');", str_replace("'", "\'", $sql));
         }
 
-        $migrationsDir = $this->getMigrationsDir();
-        $migrationClassPrefix = $this->getMigrationClassPrefix();
-        $migrationClassNamespace = $this->getMigrationClassNamespace();
+        $templateFilePath = $this->config->getTemplateFilePath();
+        $templateIndent = $this->config->getTemplateIndent();
+        $migrationsDir = $this->config->getMigrationsDirectory();
+        $migrationClassPrefix = $this->config->getMigrationClassPrefix();
+        $migrationClassNamespace = $this->config->getMigrationClassNamespace();
 
-        $version = $this->getNextVersion();
-        $template = file_get_contents($this->templateFilePath);
+        $version = $this->versionProvider->getNextVersion();
+        $template = file_get_contents($templateFilePath);
 
         if ($template === false) {
-            throw new LogicException("Unable to read $this->templateFilePath");
+            throw new LogicException("Unable to read $templateFilePath");
         }
 
+        $template = str_replace('%transactional%', $this->isPlatformAllowingTransactionalDdl() ? 'true' : 'false', $template);
         $template = str_replace('%namespace%', $migrationClassNamespace, $template);
         $template = str_replace('%version%', $version, $template);
-        $template = str_replace('%statements%', implode("\n" . $this->templateIndent, $statements), $template);
+        $template = str_replace('%statements%', implode("\n" . $templateIndent, $statements), $template);
 
         $filePath = $migrationsDir . '/' . $migrationClassPrefix . $version . '.php';
         $saved = file_put_contents($filePath, $template);
@@ -295,9 +257,12 @@ class MigrationService
         return new MigrationFile($filePath, $version);
     }
 
-    private function getNextVersion(): string
+    private function isPlatformAllowingTransactionalDdl(): bool
     {
-        return date('YmdHis');
+        $platform = $this->connection->getDatabasePlatform();
+
+        return $platform instanceof PostgreSQLPlatform
+            || $platform instanceof SQLServerPlatform;
     }
 
 }
