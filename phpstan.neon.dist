@@ -24,3 +24,8 @@ parameters:
             path: src/Doctrine/Migration/MigrationService.php
             reportUnmatched: false # depends on dbal version used, we support wider range
             count: 1
+        -
+            message: "#Class Doctrine\\\\DBAL\\\\Platforms\\\\PostgreSQLPlatform not found\\.#"
+            path: src/Doctrine/Migration/MigrationService.php
+            reportUnmatched: false # depends on dbal version used (SQL vs Sql), we support wider range
+            count: 1
