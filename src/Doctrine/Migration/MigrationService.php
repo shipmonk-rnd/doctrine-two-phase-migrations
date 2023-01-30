@@ -58,7 +58,7 @@ class MigrationService
 
     private function getMigration(string $version): Migration
     {
-        /** @var class-string<Migration> $fqn */
+        /** @var class-string<Migration> $fqn allow-narrowing */
         $fqn = '\\' . $this->config->getMigrationClassNamespace() . '\\' . $this->config->getMigrationClassPrefix() . $version;
         return new $fqn();
     }
