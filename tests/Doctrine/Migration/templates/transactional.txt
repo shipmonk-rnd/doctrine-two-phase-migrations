@@ -4,9 +4,10 @@ namespace %namespace%;
 
 use Doctrine\DBAL\Connection;
 use ShipMonk\Doctrine\Migration\Migration;
+use ShipMonk\Doctrine\Migration\TransactionalMigration;
 use ShipMonk\Doctrine\Migration\MigrationExecutor;
 
-class Migration%version% implements Migration
+class Migration%version% implements Migration, TransactionalMigration
 {
 
     public function before(MigrationExecutor $executor): void
@@ -16,11 +17,6 @@ class Migration%version% implements Migration
 
     public function after(MigrationExecutor $executor): void
     {
-    }
-
-    public function isTransactional(): bool
-    {
-        return true;
     }
 
 }
