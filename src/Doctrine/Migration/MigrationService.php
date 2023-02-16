@@ -178,7 +178,7 @@ class MigrationService
         $schema = new Schema();
         $table = $schema->createTable($migrationTableName);
         $table->addColumn('version', 'string');
-        $table->addColumn('phase', 'string', ['length' => 6]);
+        $table->addColumn('phase', 'string');
         $table->addColumn('started_at', 'string'); // string to support microseconds
         $table->addColumn('finished_at', 'string');
         $table->setPrimaryKey(['version', 'phase']);
