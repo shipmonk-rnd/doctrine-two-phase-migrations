@@ -2,8 +2,10 @@
 
 namespace ShipMonk\Doctrine\Migration\Command;
 
+use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 use ShipMonk\Doctrine\Migration\MigrationPhase;
+use ShipMonk\Doctrine\Migration\MigrationRun;
 use ShipMonk\Doctrine\Migration\MigrationService;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
@@ -24,12 +26,13 @@ class MigrationRunCommandTest extends TestCase
 
         $migrationService->expects(self::once())
             ->method('executeMigration')
-            ->with('fakeversion', MigrationPhase::AFTER);
+            ->with('fakeversion', MigrationPhase::AFTER)
+            ->willReturn(new MigrationRun('fakeversion', MigrationPhase::AFTER, 1.234, new DateTimeImmutable()));
 
         $command = new MigrationRunCommand($migrationService);
 
         self::assertSame("No migration executed (phase before).\n", $this->runPhase($command, MigrationPhase::BEFORE));
-        self::assertSame("Executing migration fakeversion phase after... done, 0.00 s elapsed.\n", $this->runPhase($command, MigrationPhase::AFTER));
+        self::assertSame("Executing migration fakeversion phase after... done, 1.234 s elapsed.\n", $this->runPhase($command, MigrationPhase::AFTER));
     }
 
     public function testRunBoth(): void
@@ -55,10 +58,10 @@ class MigrationRunCommandTest extends TestCase
         $command = new MigrationRunCommand($migrationService);
 
         $output = <<<'OUTPUT'
-            Executing migration version1 phase before... done, 0.00 s elapsed.
-            Executing migration version1 phase after... done, 0.00 s elapsed.
-            Executing migration version2 phase before... done, 0.00 s elapsed.
-            Executing migration version2 phase after... done, 0.00 s elapsed.
+            Executing migration version1 phase before... done, 0.000 s elapsed.
+            Executing migration version1 phase after... done, 0.000 s elapsed.
+            Executing migration version2 phase before... done, 0.000 s elapsed.
+            Executing migration version2 phase after... done, 0.000 s elapsed.
             OUTPUT . "\n";
 
         self::assertSame($output, $this->runPhase($command, MigrationRunCommand::PHASE_BOTH));

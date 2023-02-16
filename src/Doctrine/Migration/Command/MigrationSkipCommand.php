@@ -4,6 +4,7 @@ namespace ShipMonk\Doctrine\Migration\Command;
 
 use DateTimeImmutable;
 use ShipMonk\Doctrine\Migration\MigrationPhase;
+use ShipMonk\Doctrine\Migration\MigrationRun;
 use ShipMonk\Doctrine\Migration\MigrationService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -37,7 +38,9 @@ class MigrationSkipCommand extends Command
             $prepared = $this->migrationService->getPreparedVersions();
 
             foreach (array_diff($prepared, $executed) as $version) {
-                $this->migrationService->markMigrationExecuted($version, $phase, new DateTimeImmutable());
+                $run = new MigrationRun($version, $phase, 0, new DateTimeImmutable());
+
+                $this->migrationService->markMigrationExecuted($run);
                 $output->writeln("Migration {$version} phase {$phase} skipped.");
                 $skipped = true;
             }

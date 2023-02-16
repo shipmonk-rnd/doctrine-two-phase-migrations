@@ -18,6 +18,7 @@ use function file_put_contents;
 use function implode;
 use function ksort;
 use function method_exists;
+use function microtime;
 use function sprintf;
 use function str_replace;
 use function strpos;
@@ -39,7 +40,7 @@ class MigrationService
         EntityManagerInterface $entityManager,
         MigrationConfig $config,
         ?MigrationExecutor $executor = null,
-        ?MigrationVersionProvider $versionProvider = null
+        ?MigrationVersionProvider $versionProvider = null,
     )
     {
         $this->entityManager = $entityManager;
@@ -61,26 +62,30 @@ class MigrationService
         return new $fqn();
     }
 
-    public function executeMigration(string $version, string $phase): void
+    public function executeMigration(string $version, string $phase): MigrationRun
     {
         $migration = $this->getMigration($version);
 
         if ($migration instanceof TransactionalMigration) {
             try {
                 $this->connection->beginTransaction();
-                $this->doExecuteMigration($migration, $version, $phase);
+                $run = $this->doExecuteMigration($migration, $version, $phase);
                 $this->connection->commit();
             } catch (Throwable $e) {
                 $this->connection->rollBack();
                 throw $e;
             }
         } else {
-            $this->doExecuteMigration($migration, $version, $phase);
+            $run = $this->doExecuteMigration($migration, $version, $phase);
         }
+
+        return $run;
     }
 
-    private function doExecuteMigration(Migration $migration, string $version, string $phase): void
+    private function doExecuteMigration(Migration $migration, string $version, string $phase): MigrationRun
     {
+        $startTime = microtime(true);
+
         if ($phase === MigrationPhase::BEFORE) {
             $migration->before($this->executor);
         } elseif ($phase === MigrationPhase::AFTER) {
@@ -89,7 +94,12 @@ class MigrationService
             throw new LogicException("Invalid phase {$phase} given!");
         }
 
-        $this->markMigrationExecuted($version, $phase, new DateTimeImmutable());
+        $elapsed = microtime(true) - $startTime;
+        $run = new MigrationRun($version, $phase, $elapsed, new DateTimeImmutable());
+
+        $this->markMigrationExecuted($run);
+
+        return $run;
     }
 
     /**
@@ -147,12 +157,13 @@ class MigrationService
         return $versions;
     }
 
-    public function markMigrationExecuted(string $version, string $phase, DateTimeImmutable $executedAt): void
+    public function markMigrationExecuted(MigrationRun $run): void
     {
         $this->connection->insert($this->config->getMigrationTableName(), [
-            'version' => $version,
-            'phase' => $phase,
-            'executed' => $executedAt,
+            'version' => $run->getVersion(),
+            'phase' => $run->getPhase(),
+            'duration' => $run->getDuration(),
+            'executed' => $run->getFinishedAt(),
         ], [
             'executed' => 'datetimetz_immutable',
         ]);
@@ -171,6 +182,7 @@ class MigrationService
         $table->addColumn('version', 'string');
         $table->addColumn('phase', 'string', ['length' => 6]);
         $table->addColumn('executed', 'datetimetz_immutable');
+        $table->addColumn('duration', 'float');
         $table->setPrimaryKey(['version', 'phase']);
 
         foreach ($schema->toSql($this->connection->getDatabasePlatform()) as $sql) {
