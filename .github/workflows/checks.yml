@@ -28,7 +28,7 @@ jobs:
             -
                 name: Install extra tools
                 run: |
-                    wget https://github.com/composer-unused/composer-unused/releases/latest/download/composer-unused.phar
+                    wget https://github.com/composer-unused/composer-unused/releases/download/0.8.5/composer-unused.phar
                     wget https://github.com/maglnet/ComposerRequireChecker/releases/download/3.8.0/composer-require-checker.phar
             -
                 name: Run checks and tests
