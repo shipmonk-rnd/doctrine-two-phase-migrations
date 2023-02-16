@@ -27,12 +27,12 @@ class MigrationRunCommandTest extends TestCase
         $migrationService->expects(self::once())
             ->method('executeMigration')
             ->with('fakeversion', MigrationPhase::AFTER)
-            ->willReturn(new MigrationRun('fakeversion', MigrationPhase::AFTER, 1.234, new DateTimeImmutable()));
+            ->willReturn(new MigrationRun('fakeversion', MigrationPhase::AFTER, new DateTimeImmutable('today 00:00:00'), new DateTimeImmutable('today 00:00:01')));
 
         $command = new MigrationRunCommand($migrationService);
 
         self::assertSame("No migration executed (phase before).\n", $this->runPhase($command, MigrationPhase::BEFORE));
-        self::assertSame("Executing migration fakeversion phase after... done, 1.234 s elapsed.\n", $this->runPhase($command, MigrationPhase::AFTER));
+        self::assertSame("Executing migration fakeversion phase after... done, 1.000 s elapsed.\n", $this->runPhase($command, MigrationPhase::AFTER));
     }
 
     public function testRunBoth(): void

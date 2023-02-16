@@ -107,7 +107,7 @@ class MigrationServiceTest extends TestCase
 
         self::assertSame([
             '"START TRANSACTION"',
-            'INSERT INTO migration (version, phase, duration, executed) VALUES (?, ?, ?, ?)',
+            'INSERT INTO migration (version, phase, started_at, finished_at) VALUES (?, ?, ?, ?)',
             '"COMMIT"',
         ], $logger->getQueriesPerformed());
 
@@ -116,7 +116,7 @@ class MigrationServiceTest extends TestCase
         $nonTransactionalService->executeMigration($nonTransactionalMigrationFile->getVersion(), MigrationPhase::BEFORE);
 
         self::assertSame([
-            'INSERT INTO migration (version, phase, duration, executed) VALUES (?, ?, ?, ?)',
+            'INSERT INTO migration (version, phase, started_at, finished_at) VALUES (?, ?, ?, ?)',
         ], $logger->getQueriesPerformed());
     }
 
@@ -132,7 +132,8 @@ class MigrationServiceTest extends TestCase
 
         self::assertTrue($table->hasColumn('version'));
         self::assertTrue($table->hasColumn('phase'));
-        self::assertTrue($table->hasColumn('executed'));
+        self::assertTrue($table->hasColumn('started_at'));
+        self::assertTrue($table->hasColumn('finished_at'));
         self::assertTrue($table->hasPrimaryKey());
     }
 

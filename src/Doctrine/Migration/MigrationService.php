@@ -18,7 +18,6 @@ use function file_put_contents;
 use function implode;
 use function ksort;
 use function method_exists;
-use function microtime;
 use function sprintf;
 use function str_replace;
 use function strpos;
@@ -84,7 +83,7 @@ class MigrationService
 
     private function doExecuteMigration(Migration $migration, string $version, string $phase): MigrationRun
     {
-        $startTime = microtime(true);
+        $startTime = new DateTimeImmutable();
 
         if ($phase === MigrationPhase::BEFORE) {
             $migration->before($this->executor);
@@ -94,8 +93,8 @@ class MigrationService
             throw new LogicException("Invalid phase {$phase} given!");
         }
 
-        $elapsed = microtime(true) - $startTime;
-        $run = new MigrationRun($version, $phase, $elapsed, new DateTimeImmutable());
+        $endTime = new DateTimeImmutable();
+        $run = new MigrationRun($version, $phase, $startTime, $endTime);
 
         $this->markMigrationExecuted($run);
 
@@ -159,13 +158,12 @@ class MigrationService
 
     public function markMigrationExecuted(MigrationRun $run): void
     {
+        $microsecondsFormat = 'Y-m-d H:i:s.u';
         $this->connection->insert($this->config->getMigrationTableName(), [
             'version' => $run->getVersion(),
             'phase' => $run->getPhase(),
-            'duration' => $run->getDuration(),
-            'executed' => $run->getFinishedAt(),
-        ], [
-            'executed' => 'datetimetz_immutable',
+            'started_at' => $run->getStartedAt()->format($microsecondsFormat),
+            'finished_at' => $run->getFinishedAt()->format($microsecondsFormat),
         ]);
     }
 
@@ -181,8 +179,8 @@ class MigrationService
         $table = $schema->createTable($migrationTableName);
         $table->addColumn('version', 'string');
         $table->addColumn('phase', 'string', ['length' => 6]);
-        $table->addColumn('executed', 'datetimetz_immutable');
-        $table->addColumn('duration', 'float');
+        $table->addColumn('started_at', 'string'); // string to support microseconds
+        $table->addColumn('finished_at', 'string');
         $table->setPrimaryKey(['version', 'phase']);
 
         foreach ($schema->toSql($this->connection->getDatabasePlatform()) as $sql) {

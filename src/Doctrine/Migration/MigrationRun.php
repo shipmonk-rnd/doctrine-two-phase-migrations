@@ -11,15 +11,20 @@ class MigrationRun
 
     private string $phase;
 
-    private float $duration;
+    private DateTimeImmutable $startedAt;
 
     private DateTimeImmutable $finishedAt;
 
-    public function __construct(string $version, string $phase, float $duration, DateTimeImmutable $finishedAt)
+    public function __construct(
+        string $version,
+        string $phase,
+        DateTimeImmutable $startedAt,
+        DateTimeImmutable $finishedAt
+    )
     {
         $this->version = $version;
         $this->phase = $phase;
-        $this->duration = $duration;
+        $this->startedAt = $startedAt;
         $this->finishedAt = $finishedAt;
     }
 
@@ -35,7 +40,13 @@ class MigrationRun
 
     public function getDuration(): float
     {
-        return $this->duration;
+        return ($this->finishedAt->getTimestamp() - $this->startedAt->getTimestamp())
+            + ($this->finishedAt->format('u') - $this->startedAt->format('u')) / 1_000_000;
+    }
+
+    public function getStartedAt(): DateTimeImmutable
+    {
+        return $this->startedAt;
     }
 
     public function getFinishedAt(): DateTimeImmutable
