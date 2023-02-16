@@ -104,7 +104,7 @@ class MigrationRunCommand extends Command
     }
 
     /**
-     * @return string[]
+     * @return list<string>
      */
     private function getPhasesToRun(string $phaseArgument): array
     {

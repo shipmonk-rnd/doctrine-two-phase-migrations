@@ -181,7 +181,7 @@ class MigrationService
     }
 
     /**
-     * @return string[]
+     * @return list<string>
      */
     public function generateDiffSqls(): array
     {
