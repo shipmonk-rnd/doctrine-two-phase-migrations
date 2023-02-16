@@ -9,6 +9,4 @@ interface Migration
 
     public function after(MigrationExecutor $executor): void;
 
-    public function isTransactional(): bool;
-
 }

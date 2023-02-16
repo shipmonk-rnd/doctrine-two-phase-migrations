@@ -18,9 +18,4 @@ class Migration%version% implements Migration
     {
     }
 
-    public function isTransactional(): bool
-    {
-        return %transactional%;
-    }
-
 }

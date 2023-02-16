@@ -5,7 +5,6 @@ namespace ShipMonk\Doctrine\Migration;
 use DateTimeImmutable;
 use DirectoryIterator;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Platforms\SQLServerPlatform;
 use Doctrine\DBAL\Schema\Comparator;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\ORM\EntityManagerInterface;
@@ -17,7 +16,6 @@ use function array_values;
 use function file_get_contents;
 use function file_put_contents;
 use function implode;
-use function is_a;
 use function ksort;
 use function method_exists;
 use function sprintf;
@@ -67,7 +65,7 @@ class MigrationService
     {
         $migration = $this->getMigration($version);
 
-        if ($migration->isTransactional()) {
+        if ($migration instanceof TransactionalMigration) {
             try {
                 $this->connection->beginTransaction();
                 $this->doExecuteMigration($migration, $version, $phase);
@@ -183,7 +181,7 @@ class MigrationService
     }
 
     /**
-     * @return string[]
+     * @return list<string>
      */
     public function generateDiffSqls(): array
     {
@@ -241,7 +239,6 @@ class MigrationService
             throw new LogicException("Unable to read $templateFilePath");
         }
 
-        $template = str_replace('%transactional%', $this->isPlatformAllowingTransactionalDdl() ? 'true' : 'false', $template);
         $template = str_replace('%namespace%', $migrationClassNamespace, $template);
         $template = str_replace('%version%', $version, $template);
         $template = str_replace('%statements%', implode("\n" . $templateIndent, $statements), $template);
@@ -254,14 +251,6 @@ class MigrationService
         }
 
         return new MigrationFile($filePath, $version);
-    }
-
-    private function isPlatformAllowingTransactionalDdl(): bool
-    {
-        $platform = $this->connection->getDatabasePlatform();
-
-        return is_a($platform, '\Doctrine\DBAL\Platforms\PostgreSQLPlatform') // bypass PostgreSqlPlatform => PostgreSQLPlatform rename in doctrine/dbal v3
-            || $platform instanceof SQLServerPlatform;
     }
 
 }
