@@ -84,7 +84,6 @@ bin/console migration:skip
 #### Executing migration:
 
 Execution is performed without any interaction and does not fail nor warn when no migration is present for execution.
-Just be aware that those queries are not wrapped in transaction like it happens in `doctrine/migrations`.
 
 ```bash
 bin/console migration:run before
@@ -107,9 +106,8 @@ Interface of this method mimics interface of `Doctrine\DBAL\Connection::executeQ
 
 #### Run all queries within transaction:
 
-Each generated migration contains method specifying if it will be executed within transaction or not.
-You can easily change that according your needs.
-By default, transactional execution is enabled only for plaforms supporting DDL operations within transaction (PostgreSQL, SQLServer).
+You can change your template (or a single migration) to extends `TransactionalMigration` that causes each phases to be executed within migration.
+Be aware that many databases (like MySQL) does not support transaction over DDL operations (ALTER and such).
 
 ### Differences from doctrine/migrations
 
