@@ -50,15 +50,10 @@ services:
 After installation, you need to create `migration` table in your database. It is safe to run it even when the table was already initialized.
 
 ```bash
-bin/console migration:init
-```
+$ bin/console migration:init
 
-#### Status verification:
-
-You can check awaiting migrations and entity sync status:
-
-```bash
-bin/console migration:check
+# example output:
+Creating migration table... done.
 ```
 
 #### Generating new migration:
@@ -69,7 +64,59 @@ Be sure to verify the migration and move the queries to proper stage or adjust t
 When no diff is detected, empty migration class is generated.
 
 ```bash
-bin/console migration:generate
+$ bin/console migration:generate
+
+# example output:
+Migration version 20230217063818 was generated
+```
+
+The generated file then looks like this:
+```php
+<?php declare(strict_types = 1);
+
+namespace App\Migrations;
+
+use ShipMonk\Doctrine\Migration\Migration;
+use ShipMonk\Doctrine\Migration\MigrationExecutor;
+
+class Migration20230217063818 implements Migration
+{
+
+    public function before(MigrationExecutor $executor): void
+    {
+        $executor->executeQuery('CREATE INDEX IDX_542819F35080ECDE ON my_table (my_column)');
+    }
+
+    public function after(MigrationExecutor $executor): void
+    {
+    }
+
+}
+```
+
+You can adjust it by providing custom `$templateFilePath` to `MigrationConfig`, but it needs to implement `Migration` interface.
+
+#### Status verification:
+
+You can check awaiting migrations and entity sync status:
+
+```bash
+$ bin/console migration:check
+
+# example success output:
+Phase before fully executed, no awaiting migrations
+Phase after fully executed, no awaiting migrations
+Database is synced with entities, no migration needed.
+```
+
+```bash
+$ bin/console migration:check
+
+# example failure output:
+Phase before fully executed, no awaiting migrations
+Phase after has executed migrations not present in /app/migrations: 20220208123456
+Database is not synced with entities, missing updates:
+ > DROP INDEX IDX_9DA1A2026EA0B6CA ON my_table
 ```
 
 #### Skipping all migrations:
@@ -78,7 +125,13 @@ You can also mark all migrations as already executed, e.g. when you just created
 This will mark all not executed migrations in all stages as migrated.
 
 ```bash
-bin/console migration:skip
+$ bin/console migration:skip
+
+# example output:
+Migration 20230214154154 phase after skipped.
+Migration 20230214155401 phase after skipped.
+Migration 20230215050511 phase after skipped.
+Migration 20230217061357 phase after skipped.
 ```
 
 #### Executing migration:
@@ -86,14 +139,31 @@ bin/console migration:skip
 Execution is performed without any interaction and does not fail nor warn when no migration is present for execution.
 
 ```bash
-bin/console migration:run before
-bin/console migration:run after
+$ bin/console migration:run before
+
+# example output:
+Executing migration 20220224045126 phase before... done, 0.032 s elapsed.
+Executing migration 20220224081809 phase before... done, 0.019 s elapsed.
+Executing migration 20220224114846 phase before... done, 0.015 s elapsed.
+
+$ bin/console migration:run after
+
+# example output:
+Executing migration 20220224045126 phase after... done, 0.033 s elapsed.
+Executing migration 20220224081809 phase after... done, 0.006 s elapsed.
+Executing migration 20220224114846 phase after... done, 0.000 s elapsed.
 ```
 
 When executing all the migrations (e.g. in test environment) you probably want to achieve one-by-one execution. You can do that by:
 
 ```bash
-bin/console migration:run both
+$ bin/console migration:run both
+
+# example output:
+Executing migration 20220224045126 phase before... done, 0.032 s elapsed.
+Executing migration 20220224045126 phase after... done, 0.033 s elapsed.
+Executing migration 20220224081809 phase before... done, 0.019 s elapsed.
+Executing migration 20220224081809 phase after... done, 0.006 s elapsed.
 ```
 
 ### Advanced usage
@@ -106,11 +176,32 @@ Interface of this method mimics interface of `Doctrine\DBAL\Connection::executeQ
 
 #### Run all queries within transaction:
 
-You can change your template (or a single migration) to extends `TransactionalMigration` that causes each phases to be executed within migration.
+You can change your template (or a single migration) to extend; `TransactionalMigration`.
+That causes each phases to be executed within migration.
 Be aware that many databases (like MySQL) does not support transaction over DDL operations (ALTER and such).
+
+#### Checking execution duration:
+
+Migration table has `started_at` and `finished_at` columns with datetime data with microseconds.
+But those columns are declared as VARCHARs by default, because there is [no microsecond support in doctrine/dbal](https://github.com/doctrine/dbal/issues/2873) yet.
+That may complicate datetime manipulations (like duration calculation).
+You can adjust the structure to your needs (e.g. use `DATETIME(6)` for MySQL) manually in some migration.
+
+```
++----------------+--------+-----------------------------+---------------------------+
+| version        | phase  | started_at                  | finished_at               |
++----------------+--------+-----------------------------+---------------------------+
+| 20220224045126 | before | 2023-02-17 05:19:50.225048 | 2023-02-17 05:19:50.672871 |
+| 20220224045126 | after  | 2023-02-17 05:23:11.265727 | 2023-02-17 05:23:11.982982 |
++------------------------------------------------------+----------------------------+
+```
 
 ### Differences from doctrine/migrations
 
+The underlying diff checking and generation is equal to what happens in doctrine/migrations as it uses doctrine/dbal features.
+Main difference is that we do not provide any downgrade phases.
+
 This library is aiming to provide only core functionality needed for safe migrations within rolling-update deployments.
+Basically all the logic is inside `MigrationService`, which has only ~300 lines.
 We try to keep it as lightweight as possible, we do not plan to copy features from doctrine/migrations.
 
