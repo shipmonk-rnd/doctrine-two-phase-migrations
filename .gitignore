@@ -5,4 +5,3 @@
 !/tmp/.gitkeep
 /.idea
 /phpstan.neon
-/composer.lock

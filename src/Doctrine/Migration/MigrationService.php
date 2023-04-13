@@ -10,7 +10,6 @@ use Doctrine\DBAL\Schema\Schema;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 use LogicException;
-use SplFileInfo;
 use Throwable;
 use function array_values;
 use function file_get_contents;
@@ -112,7 +111,7 @@ class MigrationService
 
         $migrationDirIterator = new DirectoryIterator($this->config->getMigrationsDirectory());
 
-        /** @var SplFileInfo $existingFile */
+        /** @var DirectoryIterator $existingFile */
         foreach ($migrationDirIterator as $existingFile) {
             if (
                 !$existingFile->isFile()
