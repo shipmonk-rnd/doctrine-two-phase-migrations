@@ -9,6 +9,8 @@ Each migration has two *up* phases, no *down* phase.
   - to be called after the deployment is done and no traffic is hitting the old application version
   - typically contains DROP COLUMN etc.
 
+You can see [Czech talk about this library on YouTube](https://youtu.be/7OVO8itXUt0?t=3380).
+
 ### Installation:
 
 ```sh
@@ -204,4 +206,3 @@ Main difference is that we do not provide any downgrade phases.
 This library is aiming to provide only core functionality needed for safe migrations within rolling-update deployments.
 Basically all the logic is inside `MigrationService`, which has only ~300 lines.
 We try to keep it as lightweight as possible, we do not plan to copy features from doctrine/migrations.
-
