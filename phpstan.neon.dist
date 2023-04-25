@@ -22,6 +22,6 @@ parameters:
     ignoreErrors:
         -
             message: "#Call to function method_exists\\(\\) with Doctrine\\\\DBAL\\\\Schema\\\\AbstractSchemaManager and 'createComparator' will always evaluate to true.#"
-            path: src/Doctrine/Migration/MigrationService.php
+            path: src/MigrationService.php
             reportUnmatched: false # depends on dbal version used, we support wider range
             count: 1
