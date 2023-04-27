@@ -23,12 +23,12 @@
     },
     "autoload": {
         "psr-4": {
-            "ShipMonk\\": "src/"
+            "ShipMonk\\Doctrine\\Migration\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "ShipMonk\\": "tests/"
+            "ShipMonk\\Doctrine\\Migration\\": "tests/"
         }
     },
     "config": {

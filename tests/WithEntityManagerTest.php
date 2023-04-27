@@ -15,7 +15,7 @@ trait WithEntityManagerTest
 
     public function createEntityManager(): EntityManagerInterface
     {
-        $tmpDir = __DIR__ . '/../../../tmp';
+        $tmpDir = __DIR__ . '/../tmp';
 
         $databaseFile = $tmpDir . '/db.sqlite';
 

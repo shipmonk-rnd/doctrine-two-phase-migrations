@@ -219,7 +219,7 @@ class MigrationServiceTest extends TestCase
 
     private function getMigrationsTestDir(): string
     {
-        return __DIR__ . '/../../../tmp/migrations';
+        return __DIR__ . '/../tmp/migrations';
     }
 
 }
