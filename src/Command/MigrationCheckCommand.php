@@ -29,11 +29,14 @@ class MigrationCheckCommand extends Command
         $this->migrationService = $migrationService;
     }
 
+    public static function getDefaultName(): string
+    {
+        return 'migration:check';
+    }
+
     protected function configure(): void
     {
-        $this
-            ->setName('migration:check')
-            ->setDescription('Check if entities are in sync with database and if migrations were executed');
+        $this->setDescription('Check if entities are in sync with database and if migrations were executed');
     }
 
     public function run(InputInterface $input, OutputInterface $output): int

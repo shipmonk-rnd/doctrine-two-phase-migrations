@@ -31,10 +31,14 @@ class MigrationRunCommand extends Command
         $this->migrationService = $migrationService;
     }
 
+    public static function getDefaultName(): string
+    {
+        return 'migration:run';
+    }
+
     protected function configure(): void
     {
         $this
-            ->setName('migration:run')
             ->setDescription('Run all not executed migrations with specified phase')
             ->addArgument(self::ARGUMENT_PHASE, InputArgument::REQUIRED, MigrationPhase::BEFORE . '|' . MigrationPhase::AFTER . '|' . self::PHASE_BOTH);
     }
