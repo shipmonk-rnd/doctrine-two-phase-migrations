@@ -21,11 +21,14 @@ class MigrationInitCommand extends Command
         $this->migrationService = $migrationService;
     }
 
+    public static function getDefaultName(): string
+    {
+        return 'migration:init';
+    }
+
     protected function configure(): void
     {
-        $this
-            ->setName('migration:init')
-            ->setDescription('Create migration table in database');
+        $this->setDescription('Create migration table in database');
     }
 
     public function run(InputInterface $input, OutputInterface $output): int

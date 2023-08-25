@@ -22,11 +22,14 @@ class MigrationSkipCommand extends Command
         $this->migrationService = $migrationService;
     }
 
+    public static function getDefaultName(): string
+    {
+        return 'migration:skip';
+    }
+
     protected function configure(): void
     {
-        $this
-            ->setName('migration:skip')
-            ->setDescription('Mark all not executed migrations as executed in both phases');
+        $this->setDescription('Mark all not executed migrations as executed in both phases');
     }
 
     public function run(InputInterface $input, OutputInterface $output): int

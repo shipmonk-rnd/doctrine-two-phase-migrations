@@ -21,11 +21,14 @@ class MigrationGenerateCommand extends Command
         $this->migrationService = $migrationService;
     }
 
+    public static function getDefaultName(): string
+    {
+        return 'migration:generate';
+    }
+
     protected function configure(): void
     {
-        $this
-            ->setName('migration:generate')
-            ->setDescription('Generate migration class');
+        $this->setDescription('Generate migration class');
     }
 
     public function run(InputInterface $input, OutputInterface $output): int
