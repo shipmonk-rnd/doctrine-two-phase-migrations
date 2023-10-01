@@ -2938,16 +2938,16 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "1.10.32",
+            "version": "1.10.36",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpstan/phpstan.git",
-                "reference": "c47e47d3ab03137c0e121e77c4d2cb58672f6d44"
+                "reference": "ffa3089511121a672e62969404e4fddc753f9b15"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/c47e47d3ab03137c0e121e77c4d2cb58672f6d44",
-                "reference": "c47e47d3ab03137c0e121e77c4d2cb58672f6d44",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/ffa3089511121a672e62969404e4fddc753f9b15",
+                "reference": "ffa3089511121a672e62969404e4fddc753f9b15",
                 "shasum": ""
             },
             "require": {
@@ -2996,7 +2996,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2023-08-24T21:54:50+00:00"
+            "time": "2023-09-29T14:07:45+00:00"
         },
         {
             "name": "phpstan/phpstan-phpunit",
@@ -4487,16 +4487,16 @@
         },
         {
             "name": "shipmonk/phpstan-rules",
-            "version": "2.7.0",
+            "version": "2.9.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/shipmonk-rnd/phpstan-rules.git",
-                "reference": "c6f845aa474855cb37b00ec759d103c8f344c302"
+                "reference": "a566cfdb4567a3627d9a85c7b0da94a3074775af"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/shipmonk-rnd/phpstan-rules/zipball/c6f845aa474855cb37b00ec759d103c8f344c302",
-                "reference": "c6f845aa474855cb37b00ec759d103c8f344c302",
+                "url": "https://api.github.com/repos/shipmonk-rnd/phpstan-rules/zipball/a566cfdb4567a3627d9a85c7b0da94a3074775af",
+                "reference": "a566cfdb4567a3627d9a85c7b0da94a3074775af",
                 "shasum": ""
             },
             "require": {
@@ -4511,7 +4511,7 @@
                 "phpstan/phpstan-phpunit": "^1.1.1",
                 "phpstan/phpstan-strict-rules": "^1.2.3",
                 "phpunit/phpunit": "^9.5.20",
-                "shipmonk/name-collision-detector": "^1.0.0",
+                "shipmonk/name-collision-detector": "^2.0.0",
                 "slevomat/coding-standard": "^8.0.1"
             },
             "type": "phpstan-extension",
@@ -4538,9 +4538,9 @@
             ],
             "support": {
                 "issues": "https://github.com/shipmonk-rnd/phpstan-rules/issues",
-                "source": "https://github.com/shipmonk-rnd/phpstan-rules/tree/2.7.0"
+                "source": "https://github.com/shipmonk-rnd/phpstan-rules/tree/2.9.1"
             },
-            "time": "2023-08-24T13:07:01+00:00"
+            "time": "2023-09-26T12:55:42+00:00"
         },
         {
             "name": "slevomat/coding-standard",
