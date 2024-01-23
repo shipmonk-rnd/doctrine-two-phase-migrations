@@ -34,8 +34,8 @@
     "config": {
         "allow-plugins": {
             "dealerdirect/phpcodesniffer-composer-installer": true,
-            "ocramius/package-versions": true,
-            "ergebnis/composer-normalize": true
+            "ergebnis/composer-normalize": true,
+            "ocramius/package-versions": true
         },
         "sort-packages": true
     },

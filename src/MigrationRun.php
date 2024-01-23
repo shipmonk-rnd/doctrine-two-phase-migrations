@@ -41,7 +41,7 @@ class MigrationRun
     public function getDuration(): float
     {
         return ($this->finishedAt->getTimestamp() - $this->startedAt->getTimestamp())
-            + ($this->finishedAt->format('u') - $this->startedAt->format('u')) / 1_000_000;
+            + ((int) $this->finishedAt->format('u') - (int) $this->startedAt->format('u')) / 1_000_000;
     }
 
     public function getStartedAt(): DateTimeImmutable
