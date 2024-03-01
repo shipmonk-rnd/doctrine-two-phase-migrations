@@ -11,7 +11,6 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 use LogicException;
 use Throwable;
-use function array_values;
 use function file_get_contents;
 use function file_put_contents;
 use function implode;
@@ -200,7 +199,7 @@ class MigrationService
 
         $schemaManager = $this->entityManager->getConnection()->getSchemaManager();
         $fromSchema = $schemaManager->createSchema();
-        $toSchema = $schemaTool->getSchemaFromMetadata(array_values($classMetadata));
+        $toSchema = $schemaTool->getSchemaFromMetadata($classMetadata);
 
         $this->excludeTablesFromSchema($fromSchema);
         $this->excludeTablesFromSchema($toSchema);
