@@ -19,6 +19,7 @@ use function method_exists;
 use function sprintf;
 use function str_replace;
 use function strpos;
+use const PHP_EOL;
 
 class MigrationService
 {
@@ -249,7 +250,7 @@ class MigrationService
 
         $template = str_replace('%namespace%', $migrationClassNamespace, $template);
         $template = str_replace('%version%', $version, $template);
-        $template = str_replace('%statements%', implode("\n" . $templateIndent, $statements), $template);
+        $template = str_replace('%statements%', implode(PHP_EOL . $templateIndent, $statements), $template);
 
         $filePath = $migrationsDir . '/' . $migrationClassPrefix . $version . '.php';
         $saved = file_put_contents($filePath, $template);
