@@ -7,6 +7,7 @@ use Doctrine\ORM\Configuration;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\UnderscoreNamingStrategy;
+use function gc_collect_cycles;
 use function is_file;
 use function unlink;
 
@@ -20,6 +21,7 @@ trait WithEntityManagerTest
         $databaseFile = $tmpDir . '/db.sqlite';
 
         if (is_file($databaseFile)) {
+            gc_collect_cycles();
             unlink($databaseFile);
         }
 
