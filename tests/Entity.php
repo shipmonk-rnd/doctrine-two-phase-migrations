@@ -2,18 +2,16 @@
 
 namespace ShipMonk\Doctrine\Migration;
 
-use Doctrine\ORM\Mapping as ORM;
+use Doctrine\ORM\Mapping\Column;
+use Doctrine\ORM\Mapping\Entity as EntityAttr;
+use Doctrine\ORM\Mapping\Id;
 
-/**
- * @ORM\Entity
- */
+#[EntityAttr]
 class Entity
 {
 
-    /**
-     * @ORM\Id
-     * @ORM\Column(type="string", nullable=false)
-     */
+    #[Id]
+    #[Column(type: 'string', nullable: false)]
     private string $id;
 
     public function __construct(string $id)

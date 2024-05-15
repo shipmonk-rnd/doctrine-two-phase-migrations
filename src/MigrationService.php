@@ -5,7 +5,6 @@ namespace ShipMonk\Doctrine\Migration;
 use DateTimeImmutable;
 use DirectoryIterator;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Schema\Comparator;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
@@ -14,8 +13,8 @@ use Throwable;
 use function file_get_contents;
 use function file_put_contents;
 use function implode;
+use function is_string;
 use function ksort;
-use function method_exists;
 use function sprintf;
 use function str_replace;
 use function strpos;
@@ -135,18 +134,22 @@ class MigrationService
      */
     public function getExecutedVersions(string $phase): array
     {
-        /** @var array<array{ version: string }> $result */
         $result = $this->connection->executeQuery(
             'SELECT version FROM migration WHERE phase = :phase',
             [
                 'phase' => $phase,
             ],
-        )->fetchAll();
+        )->fetchAllAssociative();
 
         $versions = [];
 
         foreach ($result as $row) {
             $version = $row['version'];
+
+            if (!is_string($version)) {
+                throw new LogicException('Version should be a string.');
+            }
+
             $versions[$version] = $version;
         }
 
@@ -170,7 +173,7 @@ class MigrationService
     {
         $migrationTableName = $this->config->getMigrationTableName();
 
-        if ($this->connection->getSchemaManager()->tablesExist([$migrationTableName])) {
+        if ($this->connection->createSchemaManager()->tablesExist([$migrationTableName])) {
             return false;
         }
 
@@ -198,21 +201,18 @@ class MigrationService
         $platform = $this->entityManager->getConnection()->getDatabasePlatform();
         $classMetadata = $this->entityManager->getMetadataFactory()->getAllMetadata();
 
-        $schemaManager = $this->entityManager->getConnection()->getSchemaManager();
-        $fromSchema = $schemaManager->createSchema();
+        $schemaManager = $this->entityManager->getConnection()->createSchemaManager();
+
+        $fromSchema = $schemaManager->introspectSchema();
         $toSchema = $schemaTool->getSchemaFromMetadata($classMetadata);
 
         $this->excludeTablesFromSchema($fromSchema);
         $this->excludeTablesFromSchema($toSchema);
 
-        if (method_exists($schemaManager, 'createComparator')) {
-            $schemaComparator = $schemaManager->createComparator();
-        } else {
-            $schemaComparator = new Comparator();
-        }
-
+        $schemaComparator = $schemaManager->createComparator();
         $schemaDiff = $schemaComparator->compareSchemas($fromSchema, $toSchema);
-        return $schemaDiff->toSql($platform);
+
+        return $platform->getAlterSchemaSQL($schemaDiff);
     }
 
     private function excludeTablesFromSchema(Schema $schema): void
