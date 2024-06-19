@@ -179,10 +179,10 @@ class MigrationService
 
         $schema = new Schema();
         $table = $schema->createTable($migrationTableName);
-        $table->addColumn('version', 'string');
-        $table->addColumn('phase', 'string');
-        $table->addColumn('started_at', 'string'); // string to support microseconds
-        $table->addColumn('finished_at', 'string');
+        $table->addColumn('version', 'string', ['length' => 20]);
+        $table->addColumn('phase', 'string', ['length' => 10]);
+        $table->addColumn('started_at', 'string', ['length' => 30]); // string to support microseconds
+        $table->addColumn('finished_at', 'string', ['length' => 30]);
         $table->setPrimaryKey(['version', 'phase']);
 
         foreach ($schema->toSql($this->connection->getDatabasePlatform()) as $sql) {
