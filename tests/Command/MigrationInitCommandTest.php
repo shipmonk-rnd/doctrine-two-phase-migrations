@@ -6,6 +6,7 @@ use PHPUnit\Framework\TestCase;
 use ShipMonk\Doctrine\Migration\MigrationService;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
+use const PHP_EOL;
 
 class MigrationInitCommandTest extends TestCase
 {
@@ -21,7 +22,7 @@ class MigrationInitCommandTest extends TestCase
         $command = new MigrationInitCommand($migrationService);
         $command->run(new ArrayInput([]), $output);
 
-        self::assertSame("Creating migration table... done.\n", $output->fetch());
+        self::assertSame('Creating migration table... done.' . PHP_EOL, $output->fetch());
     }
 
 }

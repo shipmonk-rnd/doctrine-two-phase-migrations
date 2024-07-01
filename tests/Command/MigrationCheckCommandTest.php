@@ -7,6 +7,7 @@ use ShipMonk\Doctrine\Migration\MigrationService;
 use ShipMonk\Doctrine\Migration\WithEntityManagerTest;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
+use const PHP_EOL;
 
 class MigrationCheckCommandTest extends TestCase
 {
@@ -35,13 +36,11 @@ class MigrationCheckCommandTest extends TestCase
         $command->run(new ArrayInput([]), $output);
 
         self::assertSame(
-            <<<"OUTPUT"
-            Phase before fully executed, no awaiting migrations
-            Phase after not fully executed, awaiting migrations:
-             > fakeversion
-            Database is not synced with entities, missing updates:
-             > $diffSql
-            OUTPUT . "\n",
+            'Phase before fully executed, no awaiting migrations' . PHP_EOL
+            . 'Phase after not fully executed, awaiting migrations:' . PHP_EOL
+            . ' > fakeversion' . PHP_EOL
+            . 'Database is not synced with entities, missing updates:' . PHP_EOL
+            . ' > ' . $diffSql . PHP_EOL,
             $output->fetch(),
         );
     }

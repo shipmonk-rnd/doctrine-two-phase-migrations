@@ -2,39 +2,46 @@
 
 namespace ShipMonk\Doctrine\Migration;
 
-use Doctrine\DBAL\Logging\SQLLogger;
 use LogicException;
-use function gettype;
+use Psr\Log\LoggerInterface;
+use Psr\Log\LoggerTrait;
+use Stringable;
 use function is_string;
 
-class CachingSqlLogger implements SQLLogger
+class CachingSqlLogger implements LoggerInterface
 {
 
+    use LoggerTrait;
+
     /**
-     * @var string[]
+     * @var list<string>
      */
     private array $queries = [];
 
     /**
-     * @param mixed $sql
-     * @param mixed[]|null $params
-     * @param mixed[]|null $types
+     * @param mixed $level
+     * @param string|Stringable $message
+     * @param mixed[] $context
      */
-    public function startQuery($sql, ?array $params = null, ?array $types = null): void
+    public function log(
+        $level,
+        $message,
+        array $context = []
+    ): void
     {
-        if (!is_string($sql)) {
-            throw new LogicException('Unexpected sql given: ' . gettype($sql));
+        if (isset($context['sql'])) {
+            if (!is_string($context['sql'])) {
+                throw new LogicException('Query should be a string.');
+            }
+
+            $this->queries[] = $context['sql'];
+        } elseif ($context === []) {
+            $this->queries[] = (string) $message;
         }
-
-        $this->queries[] = $sql;
-    }
-
-    public function stopQuery(): void
-    {
     }
 
     /**
-     * @return string[]
+     * @return list<string>
      */
     public function getQueriesPerformed(): array
     {

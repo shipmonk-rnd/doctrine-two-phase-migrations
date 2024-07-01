@@ -20,7 +20,7 @@ class MigrationDefaultExecutor implements MigrationExecutor
 
     /**
      * @param array<mixed> $params
-     * @param array<int|string|Type|null> $types
+     * @param array<int|string, int|string|Type|null> $types
      */
     public function executeQuery(string $statement, array $params = [], array $types = []): Result
     {
