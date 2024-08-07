@@ -20,7 +20,7 @@ class MigrationServiceTest extends TestCase
 
     public function testInitGenerationExecution(): void
     {
-        $entityManager = $this->createEntityManager();
+        [$entityManager] = $this->createEntityManagerAndLogger();
         $connection = $entityManager->getConnection();
         $service = $this->createMigrationService($entityManager);
 
@@ -54,21 +54,21 @@ class MigrationServiceTest extends TestCase
         self::assertEquals([], $service->getExecutedVersions(MigrationPhase::BEFORE));
         self::assertEquals([], $service->getExecutedVersions(MigrationPhase::AFTER));
         self::assertEquals([$generatedVersion => $generatedVersion], $service->getPreparedVersions());
-        self::assertCount(0, $connection->executeQuery("SELECT * FROM {$migrationTableName}")->fetchAll());
+        self::assertCount(0, $connection->executeQuery("SELECT * FROM {$migrationTableName}")->fetchAllAssociative());
 
         $service->executeMigration($generatedVersion, MigrationPhase::BEFORE);
 
         self::assertEquals([$generatedVersion => $generatedVersion], $service->getExecutedVersions(MigrationPhase::BEFORE));
         self::assertEquals([], $service->getExecutedVersions(MigrationPhase::AFTER));
         self::assertEquals([$generatedVersion => $generatedVersion], $service->getPreparedVersions());
-        self::assertCount(1, $connection->executeQuery("SELECT * FROM {$migrationTableName}")->fetchAll());
+        self::assertCount(1, $connection->executeQuery("SELECT * FROM {$migrationTableName}")->fetchAllAssociative());
 
         $service->executeMigration($generatedVersion, MigrationPhase::AFTER);
 
         self::assertEquals([$generatedVersion => $generatedVersion], $service->getExecutedVersions(MigrationPhase::BEFORE));
         self::assertEquals([$generatedVersion => $generatedVersion], $service->getExecutedVersions(MigrationPhase::AFTER));
         self::assertEquals([$generatedVersion => $generatedVersion], $service->getPreparedVersions());
-        self::assertCount(2, $connection->executeQuery("SELECT * FROM {$migrationTableName}")->fetchAll());
+        self::assertCount(2, $connection->executeQuery("SELECT * FROM {$migrationTableName}")->fetchAllAssociative());
 
         $sqls2 = $service->generateDiffSqls();
 
@@ -77,7 +77,6 @@ class MigrationServiceTest extends TestCase
 
     public function testTransactionalExecution(): void
     {
-        $logger = new CachingSqlLogger();
         $versionProvider = new class implements MigrationVersionProvider {
 
             private int $lastVersion = 0;
@@ -88,12 +87,13 @@ class MigrationServiceTest extends TestCase
             }
 
         };
-        $entityManager = $this->createEntityManager();
+        [$entityManager, $logger] = $this->createEntityManagerAndLogger();
 
         $nonTransactionalService = $this->createMigrationService($entityManager, [], false, $versionProvider);
         $transactionalService = $this->createMigrationService($entityManager, [], true, $versionProvider);
 
         $transactionalService->initializeMigrationTable();
+        $logger->clean();
 
         $transactionalMigrationFile = $transactionalService->generateMigrationFile([]);
         $nonTransactionalMigrationFile = $nonTransactionalService->generateMigrationFile([]);
@@ -101,14 +101,12 @@ class MigrationServiceTest extends TestCase
         require $transactionalMigrationFile->getFilePath();
         require $nonTransactionalMigrationFile->getFilePath();
 
-        $entityManager->getConnection()->getConfiguration()->setSQLLogger($logger);
-
         $transactionalService->executeMigration($transactionalMigrationFile->getVersion(), MigrationPhase::BEFORE);
 
         self::assertSame([
-            '"START TRANSACTION"',
+            'Beginning transaction',
             'INSERT INTO migration (version, phase, started_at, finished_at) VALUES (?, ?, ?, ?)',
-            '"COMMIT"',
+            'Committing transaction',
         ], $logger->getQueriesPerformed());
 
         $logger->clean();
@@ -122,24 +120,26 @@ class MigrationServiceTest extends TestCase
 
     public function testInitialization(): void
     {
-        $entityManager = $this->createEntityManager();
+        [$entityManager] = $this->createEntityManagerAndLogger();
         $service = $this->createMigrationService($entityManager);
 
         self::assertTrue($service->initializeMigrationTable());
 
         $migrationTableName = $service->getConfig()->getMigrationTableName();
-        $table = $entityManager->getConnection()->getSchemaManager()->listTableDetails($migrationTableName);
+        $schemaManager = $entityManager->getConnection()->createSchemaManager();
+
+        $table = $schemaManager->introspectTable($migrationTableName);
 
         self::assertTrue($table->hasColumn('version'));
         self::assertTrue($table->hasColumn('phase'));
         self::assertTrue($table->hasColumn('started_at'));
         self::assertTrue($table->hasColumn('finished_at'));
-        self::assertTrue($table->hasPrimaryKey());
+        self::assertNotNull($table->getPrimaryKey());
     }
 
     public function testGetPreparedVersions(): void
     {
-        $entityManager = $this->createEntityManager();
+        [$entityManager] = $this->createEntityManagerAndLogger();
         $service = $this->createMigrationService($entityManager, []);
         self::assertSame([], $service->getPreparedVersions());
 
@@ -152,7 +152,7 @@ class MigrationServiceTest extends TestCase
 
     public function testExcludedTables(): void
     {
-        $entityManager = $this->createEntityManager();
+        [$entityManager] = $this->createEntityManagerAndLogger();
         $service = $this->createMigrationService($entityManager, []);
 
         $entityManager->getConnection()->executeQuery('CREATE TABLE excluded (id INT)');

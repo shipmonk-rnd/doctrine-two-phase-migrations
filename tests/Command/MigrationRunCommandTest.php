@@ -9,6 +9,7 @@ use ShipMonk\Doctrine\Migration\MigrationRun;
 use ShipMonk\Doctrine\Migration\MigrationService;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
+use const PHP_EOL;
 
 class MigrationRunCommandTest extends TestCase
 {
@@ -31,8 +32,8 @@ class MigrationRunCommandTest extends TestCase
 
         $command = new MigrationRunCommand($migrationService);
 
-        self::assertSame("No migration executed (phase before).\n", $this->runPhase($command, MigrationPhase::BEFORE));
-        self::assertSame("Executing migration fakeversion phase after... done, 1.000 s elapsed.\n", $this->runPhase($command, MigrationPhase::AFTER));
+        self::assertSame('No migration executed (phase before).' . PHP_EOL, $this->runPhase($command, MigrationPhase::BEFORE));
+        self::assertSame('Executing migration fakeversion phase after... done, 1.000 s elapsed.' . PHP_EOL, $this->runPhase($command, MigrationPhase::AFTER));
     }
 
     public function testRunBoth(): void
@@ -57,12 +58,10 @@ class MigrationRunCommandTest extends TestCase
 
         $command = new MigrationRunCommand($migrationService);
 
-        $output = <<<'OUTPUT'
-            Executing migration version1 phase before... done, 0.000 s elapsed.
-            Executing migration version1 phase after... done, 0.000 s elapsed.
-            Executing migration version2 phase before... done, 0.000 s elapsed.
-            Executing migration version2 phase after... done, 0.000 s elapsed.
-            OUTPUT . "\n";
+        $output = 'Executing migration version1 phase before... done, 0.000 s elapsed.' . PHP_EOL
+            . 'Executing migration version1 phase after... done, 0.000 s elapsed.' . PHP_EOL
+            . 'Executing migration version2 phase before... done, 0.000 s elapsed.' . PHP_EOL
+            . 'Executing migration version2 phase after... done, 0.000 s elapsed.' . PHP_EOL;
 
         self::assertSame($output, $this->runPhase($command, MigrationRunCommand::PHASE_BOTH));
     }

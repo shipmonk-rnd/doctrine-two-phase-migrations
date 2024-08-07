@@ -21,7 +21,14 @@ parameters:
                 \Symfony\Component\Console\Command\Command: Command
     ignoreErrors:
         -
-            message: "#Call to function method_exists\\(\\) with Doctrine\\\\DBAL\\\\Schema\\\\AbstractSchemaManager and 'createComparator' will always evaluate to true.#"
-            path: src/MigrationService.php
-            reportUnmatched: false # depends on dbal version used, we support wider range
+            # changes to void in new versions
+            message: '~Return type \(void\) of method ShipMonk\\Doctrine\\Migration\\CachingSqlLogger::log\(\) should be compatible with return type \(null\) of method Psr\\Log\\LoggerInterface::log\(\)~'
+            path: tests\CachingSqlLogger.php
+            reportUnmatched: false
+            count: 1
+        -
+            # changes to string|Stringable in new versions
+            message: '~Parameter #2 \$message \(string\|Stringable\) of method ShipMonk\\Doctrine\\Migration\\CachingSqlLogger::log\(\) should be contravariant with parameter \$message \(mixed\) of method Psr\\Log\\LoggerTrait::log\(\)~'
+            path: tests\CachingSqlLogger.php
+            reportUnmatched: false
             count: 1

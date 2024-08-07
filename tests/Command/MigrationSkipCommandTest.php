@@ -6,6 +6,7 @@ use PHPUnit\Framework\TestCase;
 use ShipMonk\Doctrine\Migration\MigrationService;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
+use const PHP_EOL;
 
 class MigrationSkipCommandTest extends TestCase
 {
@@ -25,7 +26,7 @@ class MigrationSkipCommandTest extends TestCase
         $command = new MigrationSkipCommand($migrationService);
         $command->run(new ArrayInput([]), $output);
 
-        self::assertSame("Migration fakeversion phase after skipped.\n", $output->fetch());
+        self::assertSame('Migration fakeversion phase after skipped.' . PHP_EOL, $output->fetch());
     }
 
 }

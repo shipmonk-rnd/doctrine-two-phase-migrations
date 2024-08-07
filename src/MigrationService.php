@@ -5,7 +5,6 @@ namespace ShipMonk\Doctrine\Migration;
 use DateTimeImmutable;
 use DirectoryIterator;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Schema\Comparator;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
@@ -14,11 +13,12 @@ use Throwable;
 use function file_get_contents;
 use function file_put_contents;
 use function implode;
+use function is_string;
 use function ksort;
-use function method_exists;
 use function sprintf;
 use function str_replace;
 use function strpos;
+use const PHP_EOL;
 
 class MigrationService
 {
@@ -134,18 +134,22 @@ class MigrationService
      */
     public function getExecutedVersions(string $phase): array
     {
-        /** @var array<array{ version: string }> $result */
         $result = $this->connection->executeQuery(
             'SELECT version FROM migration WHERE phase = :phase',
             [
                 'phase' => $phase,
             ],
-        )->fetchAll();
+        )->fetchAllAssociative();
 
         $versions = [];
 
         foreach ($result as $row) {
             $version = $row['version'];
+
+            if (!is_string($version)) {
+                throw new LogicException('Version should be a string.');
+            }
+
             $versions[$version] = $version;
         }
 
@@ -169,16 +173,16 @@ class MigrationService
     {
         $migrationTableName = $this->config->getMigrationTableName();
 
-        if ($this->connection->getSchemaManager()->tablesExist([$migrationTableName])) {
+        if ($this->connection->createSchemaManager()->tablesExist([$migrationTableName])) {
             return false;
         }
 
         $schema = new Schema();
         $table = $schema->createTable($migrationTableName);
-        $table->addColumn('version', 'string');
-        $table->addColumn('phase', 'string');
-        $table->addColumn('started_at', 'string'); // string to support microseconds
-        $table->addColumn('finished_at', 'string');
+        $table->addColumn('version', 'string', ['length' => 20]);
+        $table->addColumn('phase', 'string', ['length' => 10]);
+        $table->addColumn('started_at', 'string', ['length' => 30]); // string to support microseconds
+        $table->addColumn('finished_at', 'string', ['length' => 30]);
         $table->setPrimaryKey(['version', 'phase']);
 
         foreach ($schema->toSql($this->connection->getDatabasePlatform()) as $sql) {
@@ -197,21 +201,18 @@ class MigrationService
         $platform = $this->entityManager->getConnection()->getDatabasePlatform();
         $classMetadata = $this->entityManager->getMetadataFactory()->getAllMetadata();
 
-        $schemaManager = $this->entityManager->getConnection()->getSchemaManager();
-        $fromSchema = $schemaManager->createSchema();
+        $schemaManager = $this->entityManager->getConnection()->createSchemaManager();
+
+        $fromSchema = $schemaManager->introspectSchema();
         $toSchema = $schemaTool->getSchemaFromMetadata($classMetadata);
 
         $this->excludeTablesFromSchema($fromSchema);
         $this->excludeTablesFromSchema($toSchema);
 
-        if (method_exists($schemaManager, 'createComparator')) {
-            $schemaComparator = $schemaManager->createComparator();
-        } else {
-            $schemaComparator = new Comparator();
-        }
-
+        $schemaComparator = $schemaManager->createComparator();
         $schemaDiff = $schemaComparator->compareSchemas($fromSchema, $toSchema);
-        return $schemaDiff->toSql($platform);
+
+        return $platform->getAlterSchemaSQL($schemaDiff);
     }
 
     private function excludeTablesFromSchema(Schema $schema): void
@@ -249,7 +250,7 @@ class MigrationService
 
         $template = str_replace('%namespace%', $migrationClassNamespace, $template);
         $template = str_replace('%version%', $version, $template);
-        $template = str_replace('%statements%', implode("\n" . $templateIndent, $statements), $template);
+        $template = str_replace('%statements%', implode(PHP_EOL . $templateIndent, $statements), $template);
 
         $filePath = $migrationsDir . '/' . $migrationClassPrefix . $version . '.php';
         $saved = file_put_contents($filePath, $template);

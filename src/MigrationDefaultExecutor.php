@@ -2,7 +2,9 @@
 
 namespace ShipMonk\Doctrine\Migration;
 
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Result;
 use Doctrine\DBAL\Types\Type;
 
@@ -20,7 +22,7 @@ class MigrationDefaultExecutor implements MigrationExecutor
 
     /**
      * @param array<mixed> $params
-     * @param array<int|string|Type|null> $types
+     * @param array<non-negative-int|string, string|Type|ParameterType|ArrayParameterType> $types
      */
     public function executeQuery(string $statement, array $params = [], array $types = []): Result
     {

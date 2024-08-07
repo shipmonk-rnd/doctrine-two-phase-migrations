@@ -10,6 +10,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use function array_diff;
 use function count;
 use function implode;
+use const PHP_EOL;
 
 class MigrationCheckCommand extends Command
 {
@@ -53,7 +54,7 @@ class MigrationCheckCommand extends Command
         $updates = $this->migrationService->generateDiffSqls();
 
         if (count($updates) !== 0) {
-            $output->writeln("<comment>Database is not synced with entities, missing updates:\n > " . implode("\n > ", $updates) . '</comment>');
+            $output->writeln('<comment>Database is not synced with entities, missing updates:' . PHP_EOL . ' > ' . implode(PHP_EOL . ' > ', $updates) . '</comment>');
             return self::EXIT_ENTITIES_NOT_SYNCED;
         }
 
@@ -80,7 +81,7 @@ class MigrationCheckCommand extends Command
 
             if (count($toBeExecuted) > 0) {
                 $exitCode |= self::EXIT_AWAITING_MIGRATION;
-                $output->writeln("<comment>Phase $phase not fully executed, awaiting migrations:\n > " . implode("\n > ", $toBeExecuted) . '</comment>');
+                $output->writeln("<comment>Phase $phase not fully executed, awaiting migrations:" . PHP_EOL . ' > ' . implode(PHP_EOL . ' > ', $toBeExecuted) . '</comment>');
             }
 
             if (count($executedNotPresent) === 0 && count($toBeExecuted) === 0) {
