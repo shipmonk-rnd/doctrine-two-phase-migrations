@@ -4,7 +4,7 @@ namespace ShipMonk\Doctrine\Migration\Command;
 
 use PHPUnit\Framework\TestCase;
 use ShipMonk\Doctrine\Migration\MigrationService;
-use ShipMonk\Doctrine\Migration\WithEntityManagerTest;
+use ShipMonk\Doctrine\Migration\WithEntityManagerTestCase;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 use const PHP_EOL;
@@ -12,7 +12,7 @@ use const PHP_EOL;
 class MigrationCheckCommandTest extends TestCase
 {
 
-    use WithEntityManagerTest;
+    use WithEntityManagerTestCase;
 
     public function testCheck(): void
     {
