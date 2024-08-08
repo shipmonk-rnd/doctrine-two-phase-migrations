@@ -8,6 +8,7 @@ use ShipMonk\Doctrine\Migration\MigrationService;
 use ShipMonk\Doctrine\Migration\WithEntityManagerTest;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
+use const PHP_EOL;
 
 class MigrationGenerateCommandTest extends TestCase
 {
@@ -32,7 +33,7 @@ class MigrationGenerateCommandTest extends TestCase
         $command = new MigrationGenerateCommand($migrationService);
         $command->run(new ArrayInput([]), $output);
 
-        self::assertSame("Migration version fakeversion was generated\n", $output->fetch());
+        self::assertSame('Migration version fakeversion was generated' . PHP_EOL, $output->fetch());
     }
 
 }
