@@ -47,14 +47,20 @@ class MigrationRunCommandTest extends TestCase
             ->method('getPreparedVersions')
             ->willReturn(['version1' => 'version1', 'version2' => 'version2']);
 
-        $migrationService->expects(self::exactly(4))
+        $executeCallsMatcher = self::exactly(4);
+        $migrationService->expects($executeCallsMatcher)
             ->method('executeMigration')
-            ->withConsecutive(
-                ['version1', MigrationPhase::BEFORE],
-                ['version1', MigrationPhase::AFTER],
-                ['version2', MigrationPhase::BEFORE],
-                ['version2', MigrationPhase::AFTER],
-            );
+            ->willReturnCallback(function (string $version, string $phase) use ($executeCallsMatcher): MigrationRun {
+                match ($executeCallsMatcher->numberOfInvocations()) {
+                    1 => self::assertEquals(['version1', MigrationPhase::BEFORE], [$version, $phase]),
+                    2 => self::assertEquals(['version1', MigrationPhase::AFTER], [$version, $phase]),
+                    3 => self::assertEquals(['version2', MigrationPhase::BEFORE], [$version, $phase]),
+                    4 => self::assertEquals(['version2', MigrationPhase::AFTER], [$version, $phase]),
+                    default => self::fail('Unexpected call'),
+                };
+
+                return $this->createMock(MigrationRun::class);
+            });
 
         $command = new MigrationRunCommand($migrationService);
 

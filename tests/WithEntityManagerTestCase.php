@@ -12,7 +12,7 @@ use function gc_collect_cycles;
 use function is_file;
 use function unlink;
 
-trait WithEntityManagerTest
+trait WithEntityManagerTestCase
 {
 
     /**

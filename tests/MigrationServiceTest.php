@@ -16,7 +16,7 @@ use function touch;
 class MigrationServiceTest extends TestCase
 {
 
-    use WithEntityManagerTest;
+    use WithEntityManagerTestCase;
 
     public function testInitGenerationExecution(): void
     {

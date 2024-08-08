@@ -17,7 +17,7 @@
         "phpstan/phpstan": "^1.11.5",
         "phpstan/phpstan-phpunit": "^1.4.0",
         "phpstan/phpstan-strict-rules": "^1.6.0",
-        "phpunit/phpunit": "^9.5.28",
+        "phpunit/phpunit": "^10.5.29",
         "psr/log": "^1 || ^2 || ^3",
         "shipmonk/composer-dependency-analyser": "^1.0",
         "shipmonk/phpstan-rules": "^3.0.0",
@@ -57,7 +57,7 @@
             "composer-dependency-analyser"
         ],
         "check:ec": "ec src",
-        "check:tests": "phpunit -vvv tests",
+        "check:tests": "phpunit tests",
         "check:types": "phpstan analyse -vvv",
         "fix:cs": "phpcbf"
     }
