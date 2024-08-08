@@ -11,9 +11,14 @@ parameters:
         - src
         - tests
     tmpDir: cache/phpstan/
-    checkMissingCallableSignature: true
+    checkImplicitMixed: true
+    checkBenevolentUnionTypes: true
     checkUninitializedProperties: true
+    checkMissingCallableSignature: true
     checkTooWideReturnTypesInProtectedAndPublicMethods: true
+    reportAnyTypeWideningInVarTag: true
+    reportPossiblyNonexistentConstantArrayOffset: true
+    reportPossiblyNonexistentGeneralArrayOffset: true
     shipmonkRules:
         classSuffixNaming:
             superclassToSuffixMapping:
