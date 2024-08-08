@@ -134,6 +134,7 @@ class MigrationService
      */
     public function getExecutedVersions(string $phase): array
     {
+        /** @var list<array{version: mixed}> $result */
         $result = $this->connection->executeQuery(
             'SELECT version FROM migration WHERE phase = :phase',
             [
