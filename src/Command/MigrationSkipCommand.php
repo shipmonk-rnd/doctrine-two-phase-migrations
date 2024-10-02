@@ -32,7 +32,7 @@ class MigrationSkipCommand extends Command
         $this->setDescription('Mark all not executed migrations as executed in both phases');
     }
 
-    public function run(InputInterface $input, OutputInterface $output): int
+    public function execute(InputInterface $input, OutputInterface $output): int
     {
         $skipped = false;
 

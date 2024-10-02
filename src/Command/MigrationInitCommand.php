@@ -31,7 +31,7 @@ class MigrationInitCommand extends Command
         $this->setDescription('Create migration table in database');
     }
 
-    public function run(InputInterface $input, OutputInterface $output): int
+    public function execute(InputInterface $input, OutputInterface $output): int
     {
         $output->write('<comment>Creating migration table... </comment>');
         $initialized = $this->migrationService->initializeMigrationTable();
