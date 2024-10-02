@@ -9,6 +9,7 @@ use ShipMonk\Doctrine\Migration\MigrationRun;
 use ShipMonk\Doctrine\Migration\MigrationService;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
+use Symfony\Component\Console\Tester\CommandTester;
 use const PHP_EOL;
 
 class MigrationRunCommandTest extends TestCase
@@ -70,6 +71,14 @@ class MigrationRunCommandTest extends TestCase
             . 'Executing migration version2 phase after... done, 0.000 s elapsed.' . PHP_EOL;
 
         self::assertSame($output, $this->runPhase($command, MigrationRunCommand::PHASE_BOTH));
+    }
+
+    public function testFailureNoArgs(): void
+    {
+        self::expectExceptionMessage('Not enough arguments (missing: "phase").');
+
+        $tester = new CommandTester(new MigrationRunCommand($this->createMock(MigrationService::class)));
+        $tester->execute([]);
     }
 
     private function runPhase(MigrationRunCommand $command, string $phase): string
