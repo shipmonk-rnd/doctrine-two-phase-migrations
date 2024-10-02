@@ -43,7 +43,7 @@ class MigrationRunCommand extends Command
             ->addArgument(self::ARGUMENT_PHASE, InputArgument::REQUIRED, MigrationPhase::BEFORE . '|' . MigrationPhase::AFTER . '|' . self::PHASE_BOTH);
     }
 
-    public function run(InputInterface $input, OutputInterface $output): int
+    public function execute(InputInterface $input, OutputInterface $output): int
     {
         $phaseArgument = $input->getArgument(self::ARGUMENT_PHASE);
 

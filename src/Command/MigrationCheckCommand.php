@@ -40,7 +40,7 @@ class MigrationCheckCommand extends Command
         $this->setDescription('Check if entities are in sync with database and if migrations were executed');
     }
 
-    public function run(InputInterface $input, OutputInterface $output): int
+    public function execute(InputInterface $input, OutputInterface $output): int
     {
         $exitCode = self::EXIT_OK;
         $exitCode |= $this->checkMigrationsExecuted($output);

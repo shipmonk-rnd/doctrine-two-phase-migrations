@@ -31,7 +31,7 @@ class MigrationGenerateCommand extends Command
         $this->setDescription('Generate migration class');
     }
 
-    public function run(InputInterface $input, OutputInterface $output): int
+    public function execute(InputInterface $input, OutputInterface $output): int
     {
         $sqls = $this->migrationService->generateDiffSqls();
 
