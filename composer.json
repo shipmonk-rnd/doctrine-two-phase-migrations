@@ -14,13 +14,13 @@
         "doctrine/annotations": "^2.0.0",
         "editorconfig-checker/editorconfig-checker": "^10.4.0",
         "ergebnis/composer-normalize": "^2.28",
-        "phpstan/phpstan": "^1.11.5",
-        "phpstan/phpstan-phpunit": "^1.4.0",
-        "phpstan/phpstan-strict-rules": "^1.6.0",
+        "phpstan/phpstan": "^2.0.1",
+        "phpstan/phpstan-phpunit": "^2.0.0",
+        "phpstan/phpstan-strict-rules": "^2.0.0",
         "phpunit/phpunit": "^10.5.29",
         "psr/log": "^1 || ^2 || ^3",
-        "shipmonk/composer-dependency-analyser": "^1.0",
-        "shipmonk/phpstan-rules": "^3.0.0",
+        "shipmonk/composer-dependency-analyser": "^1.7.0",
+        "shipmonk/phpstan-rules": "^4.0.0",
         "slevomat/coding-standard": "^8.15.0"
     },
     "autoload": {
@@ -52,13 +52,10 @@
         ],
         "check:composer": "composer normalize --dry-run --no-check-lock --no-update-lock",
         "check:cs": "phpcs",
-        "check:dependencies": [
-            "composer dump-autoload --classmap-authoritative",
-            "composer-dependency-analyser"
-        ],
+        "check:dependencies": "composer-dependency-analyser",
         "check:ec": "ec src",
         "check:tests": "phpunit tests",
-        "check:types": "phpstan analyse -vvv",
+        "check:types": "phpstan analyse -vv",
         "fix:cs": "phpcbf"
     }
 }
