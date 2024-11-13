@@ -36,6 +36,7 @@ class MigrationGenerateCommand extends Command
     public function execute(InputInterface $input, OutputInterface $output): int
     {
         $isEmptyOnly = (bool) $input->getOption('empty-only');
+
         if (!$isEmptyOnly) {
             $sqls = $this->migrationService->generateDiffSqls();
 
