@@ -49,7 +49,7 @@ class MigrationGenerateCommandTest extends TestCase
 
         $output = new BufferedOutput();
         $command = new MigrationGenerateCommand($migrationService);
-        $command->run(new ArrayInput(['--empty-only']), $output);
+        $command->run(new ArrayInput(['--empty-only' => true]), $output);
 
         self::assertSame('Migration version fakeversion was generated' . PHP_EOL, $output->fetch());
     }
