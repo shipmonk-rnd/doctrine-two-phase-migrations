@@ -51,7 +51,7 @@ class MigrationGenerateCommandTest extends TestCase
         $command = new MigrationGenerateCommand($migrationService);
         $command->run(new ArrayInput(['--empty-only' => true]), $output);
 
-        self::assertSame('Migration version fakeversion was generated' . PHP_EOL, $output->fetch());
+        self::assertSame("Creating empty migration class...\nMigration version fakeversion was generated" . PHP_EOL, $output->fetch());
     }
 
 }
