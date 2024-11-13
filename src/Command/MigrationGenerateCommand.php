@@ -5,6 +5,7 @@ namespace ShipMonk\Doctrine\Migration\Command;
 use ShipMonk\Doctrine\Migration\MigrationService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use function count;
 
@@ -29,14 +30,22 @@ class MigrationGenerateCommand extends Command
     protected function configure(): void
     {
         $this->setDescription('Generate migration class');
+        $this->addOption('empty-only', null, InputOption::VALUE_NONE, 'Skips SQL Diff and only produces empty migration file', null);
     }
 
     public function execute(InputInterface $input, OutputInterface $output): int
     {
-        $sqls = $this->migrationService->generateDiffSqls();
+        $isEmptyOnly = (bool) $input->getOption('empty-only');
+        if (!$isEmptyOnly) {
+            $sqls = $this->migrationService->generateDiffSqls();
 
-        if (count($sqls) === 0) {
-            $output->writeln('<comment>No changes found, creating empty migration class...</comment>');
+            if (count($sqls) === 0) {
+                $output->writeln('<comment>No changes found, creating empty migration class...</comment>');
+            }
+        } else {
+            $sqls = [];
+
+            $output->writeln('<comment>Creating empty migration class...</comment>');
         }
 
         $file = $this->migrationService->generateMigrationFile($sqls);

@@ -36,4 +36,22 @@ class MigrationGenerateCommandTest extends TestCase
         self::assertSame('Migration version fakeversion was generated' . PHP_EOL, $output->fetch());
     }
 
+    public function testCheckEmpty(): void
+    {
+        $migrationService = $this->createMock(MigrationService::class);
+        $migrationService->expects(self::never())
+            ->method('generateDiffSqls');
+
+        $migrationService->expects(self::once())
+            ->method('generateMigrationFile')
+            ->with([])
+            ->willReturn(new MigrationFile('fakepath', 'fakeversion'));
+
+        $output = new BufferedOutput();
+        $command = new MigrationGenerateCommand($migrationService);
+        $command->run(new ArrayInput(['--empty-only']), $output);
+
+        self::assertSame('Migration version fakeversion was generated' . PHP_EOL, $output->fetch());
+    }
+
 }
