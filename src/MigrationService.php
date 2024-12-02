@@ -33,11 +33,14 @@ class MigrationService
 
     private MigrationVersionProvider $versionProvider;
 
+    private MigrationsAnalyzer $migrationsAnalyzer;
+
     public function __construct(
         EntityManagerInterface $entityManager,
         MigrationConfig $config,
         ?MigrationExecutor $executor = null,
-        ?MigrationVersionProvider $versionProvider = null
+        ?MigrationVersionProvider $versionProvider = null,
+        ?MigrationsAnalyzer $migrationsAnalyzer = null
     )
     {
         $this->entityManager = $entityManager;
@@ -45,6 +48,7 @@ class MigrationService
         $this->config = $config;
         $this->executor = $executor ?? new MigrationDefaultExecutor($this->connection);
         $this->versionProvider = $versionProvider ?? new MigrationDefaultVersionProvider();
+        $this->migrationsAnalyzer = $migrationsAnalyzer ?? new MigrationDefaultAnalyzer();
     }
 
     public function getConfig(): MigrationConfig
@@ -226,14 +230,19 @@ class MigrationService
     }
 
     /**
-     * @param string[] $sqls
+     * @param list<string|Statement> $sqls
      */
     public function generateMigrationFile(array $sqls): MigrationFile
     {
-        $statements = [];
+        $statements = $this->migrationsAnalyzer->analyze($sqls);
+        $statementsBefore = $statementsAfter = [];
 
-        foreach ($sqls as $sql) {
-            $statements[] = sprintf("\$executor->executeQuery('%s');", str_replace("'", "\'", $sql));
+        foreach ($statements as $statement) {
+            if ($statement->phase === MigrationPhase::AFTER) {
+                $statementsAfter[] = sprintf("\$executor->executeQuery('%s');", str_replace("'", "\'", $statement->sql));
+            } else {
+                $statementsBefore[] = sprintf("\$executor->executeQuery('%s');", str_replace("'", "\'", $statement->sql));
+            }
         }
 
         $templateFilePath = $this->config->getTemplateFilePath();
@@ -251,7 +260,8 @@ class MigrationService
 
         $template = str_replace('%namespace%', $migrationClassNamespace, $template);
         $template = str_replace('%version%', $version, $template);
-        $template = str_replace('%statements%', implode(PHP_EOL . $templateIndent, $statements), $template);
+        $template = str_replace('%statements%', implode(PHP_EOL . $templateIndent, $statementsBefore), $template);
+        $template = str_replace('%statementsAfter%', implode(PHP_EOL . $templateIndent, $statementsAfter), $template);
 
         $filePath = $migrationsDir . '/' . $migrationClassPrefix . $version . '.php';
         $saved = file_put_contents($filePath, $template);
