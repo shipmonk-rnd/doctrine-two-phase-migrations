@@ -17,6 +17,7 @@ class Migration%version% implements Migration, TransactionalMigration
 
     public function after(MigrationExecutor $executor): void
     {
+        %statementsAfter%
     }
 
 }
