@@ -40,7 +40,7 @@ class MigrationRunCommand extends Command
     {
         $this
             ->setDescription('Run all not executed migrations with specified phase')
-            ->addArgument(self::ARGUMENT_PHASE, InputArgument::REQUIRED, MigrationPhase::BEFORE . '|' . MigrationPhase::AFTER . '|' . self::PHASE_BOTH);
+            ->addArgument(self::ARGUMENT_PHASE, InputArgument::REQUIRED, MigrationPhase::BEFORE->value . '|' . MigrationPhase::AFTER->value . '|' . self::PHASE_BOTH);
     }
 
     public function execute(InputInterface $input, OutputInterface $output): int
@@ -64,18 +64,18 @@ class MigrationRunCommand extends Command
     }
 
     /**
-     * @param string[] $phases
+     * @param list<MigrationPhase> $phases
      */
     private function executeMigrations(OutputInterface $output, array $phases): bool
     {
         $executed = [];
 
         if (in_array(MigrationPhase::BEFORE, $phases, true)) {
-            $executed[MigrationPhase::BEFORE] = $this->migrationService->getExecutedVersions(MigrationPhase::BEFORE);
+            $executed[MigrationPhase::BEFORE->value] = $this->migrationService->getExecutedVersions(MigrationPhase::BEFORE);
         }
 
         if (in_array(MigrationPhase::AFTER, $phases, true)) {
-            $executed[MigrationPhase::AFTER] = $this->migrationService->getExecutedVersions(MigrationPhase::AFTER);
+            $executed[MigrationPhase::AFTER->value] = $this->migrationService->getExecutedVersions(MigrationPhase::AFTER);
         }
 
         $preparedVersions = $this->migrationService->getPreparedVersions();
@@ -83,7 +83,7 @@ class MigrationRunCommand extends Command
 
         foreach ($preparedVersions as $version) {
             foreach ($phases as $phase) {
-                if (isset($executed[$phase][$version])) {
+                if (isset($executed[$phase->value][$version])) {
                     continue;
                 }
 
@@ -95,9 +95,9 @@ class MigrationRunCommand extends Command
         return $migratedSomething;
     }
 
-    private function executeMigration(OutputInterface $output, string $version, string $phase): void
+    private function executeMigration(OutputInterface $output, string $version, MigrationPhase $phase): void
     {
-        $output->write("Executing migration {$version} phase {$phase}... ");
+        $output->write("Executing migration {$version} phase {$phase->value}... ");
 
         $run = $this->migrationService->executeMigration($version, $phase);
 
@@ -106,15 +106,15 @@ class MigrationRunCommand extends Command
     }
 
     /**
-     * @return list<string>
+     * @return list<MigrationPhase>
      */
     private function getPhasesToRun(string $phaseArgument): array
     {
-        if ($phaseArgument === MigrationPhase::BEFORE) {
+        if ($phaseArgument === MigrationPhase::BEFORE->value) {
             return [MigrationPhase::BEFORE];
         }
 
-        if ($phaseArgument === MigrationPhase::AFTER) {
+        if ($phaseArgument === MigrationPhase::AFTER->value) {
             return [MigrationPhase::AFTER];
         }
 
