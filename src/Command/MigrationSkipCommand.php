@@ -36,7 +36,7 @@ class MigrationSkipCommand extends Command
     {
         $skipped = false;
 
-        foreach ([MigrationPhase::BEFORE, MigrationPhase::AFTER] as $phase) {
+        foreach (MigrationPhase::cases() as $phase) {
             $executed = $this->migrationService->getExecutedVersions($phase);
             $prepared = $this->migrationService->getPreparedVersions();
 
@@ -45,7 +45,7 @@ class MigrationSkipCommand extends Command
                 $run = new MigrationRun($version, $phase, $now, $now);
 
                 $this->migrationService->markMigrationExecuted($run);
-                $output->writeln("Migration {$version} phase {$phase} skipped.");
+                $output->writeln("Migration {$version} phase {$phase->value} skipped.");
                 $skipped = true;
             }
         }

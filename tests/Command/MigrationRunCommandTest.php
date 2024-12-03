@@ -33,8 +33,8 @@ class MigrationRunCommandTest extends TestCase
 
         $command = new MigrationRunCommand($migrationService);
 
-        self::assertSame('No migration executed (phase before).' . PHP_EOL, $this->runPhase($command, MigrationPhase::BEFORE));
-        self::assertSame('Executing migration fakeversion phase after... done, 1.000 s elapsed.' . PHP_EOL, $this->runPhase($command, MigrationPhase::AFTER));
+        self::assertSame('No migration executed (phase before).' . PHP_EOL, $this->runPhase($command, MigrationPhase::BEFORE->value));
+        self::assertSame('Executing migration fakeversion phase after... done, 1.000 s elapsed.' . PHP_EOL, $this->runPhase($command, MigrationPhase::AFTER->value));
     }
 
     public function testRunBoth(): void
@@ -51,7 +51,7 @@ class MigrationRunCommandTest extends TestCase
         $executeCallsMatcher = self::exactly(4);
         $migrationService->expects($executeCallsMatcher)
             ->method('executeMigration')
-            ->willReturnCallback(function (string $version, string $phase) use ($executeCallsMatcher): MigrationRun {
+            ->willReturnCallback(function (string $version, MigrationPhase $phase) use ($executeCallsMatcher): MigrationRun {
                 match ($executeCallsMatcher->numberOfInvocations()) {
                     1 => self::assertEquals(['version1', MigrationPhase::BEFORE], [$version, $phase]),
                     2 => self::assertEquals(['version1', MigrationPhase::AFTER], [$version, $phase]),
