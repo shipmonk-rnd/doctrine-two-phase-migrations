@@ -2,10 +2,10 @@
 
 namespace ShipMonk\Doctrine\Migration;
 
-interface MigrationPhase
+enum MigrationPhase: string
 {
 
-    public const BEFORE = 'before';
-    public const AFTER = 'after';
+    case BEFORE = 'before';
+    case AFTER = 'after';
 
 }

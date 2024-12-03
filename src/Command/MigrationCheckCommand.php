@@ -67,7 +67,7 @@ class MigrationCheckCommand extends Command
         $exitCode = self::EXIT_OK;
         $migrationsDir = $this->migrationService->getConfig()->getMigrationsDirectory();
 
-        foreach ([MigrationPhase::BEFORE, MigrationPhase::AFTER] as $phase) {
+        foreach (MigrationPhase::cases() as $phase) {
             $executed = $this->migrationService->getExecutedVersions($phase);
             $prepared = $this->migrationService->getPreparedVersions();
 
@@ -76,16 +76,16 @@ class MigrationCheckCommand extends Command
 
             if (count($executedNotPresent) > 0) {
                 $exitCode |= self::EXIT_UNKNOWN_MIGRATION;
-                $output->writeln("<error>Phase $phase has executed migrations not present in {$migrationsDir}: " . implode(', ', $executedNotPresent) . '</error>');
+                $output->writeln("<error>Phase $phase->value has executed migrations not present in {$migrationsDir}: " . implode(', ', $executedNotPresent) . '</error>');
             }
 
             if (count($toBeExecuted) > 0) {
                 $exitCode |= self::EXIT_AWAITING_MIGRATION;
-                $output->writeln("<comment>Phase $phase not fully executed, awaiting migrations:" . PHP_EOL . ' > ' . implode(PHP_EOL . ' > ', $toBeExecuted) . '</comment>');
+                $output->writeln("<comment>Phase $phase->value not fully executed, awaiting migrations:" . PHP_EOL . ' > ' . implode(PHP_EOL . ' > ', $toBeExecuted) . '</comment>');
             }
 
             if (count($executedNotPresent) === 0 && count($toBeExecuted) === 0) {
-                $output->writeln("<info>Phase $phase fully executed, no awaiting migrations</info>");
+                $output->writeln("<info>Phase $phase->value fully executed, no awaiting migrations</info>");
             }
         }
 
