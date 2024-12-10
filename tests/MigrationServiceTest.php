@@ -9,8 +9,10 @@ use function array_map;
 use function file_get_contents;
 use function glob;
 use function is_dir;
+use function is_string;
 use function mkdir;
 use function rmdir;
+use function str_contains;
 use function touch;
 
 class MigrationServiceTest extends TestCase
@@ -83,7 +85,7 @@ class MigrationServiceTest extends TestCase
 
             public function getNextVersion(): string
             {
-                return (string) ++$this->lastVersion;
+                return 'tx' . ++$this->lastVersion;
             }
 
         };
@@ -114,6 +116,117 @@ class MigrationServiceTest extends TestCase
         $nonTransactionalService->executeMigration($nonTransactionalMigrationFile->getVersion(), MigrationPhase::BEFORE);
 
         self::assertSame([
+            'INSERT INTO migration (version, phase, started_at, finished_at) VALUES (?, ?, ?, ?)',
+        ], $logger->getQueriesPerformed());
+    }
+
+    public function testBothPhasesGenerated(): void
+    {
+        $versionProvider = new class implements MigrationVersionProvider {
+
+            private int $lastVersion = 0;
+
+            public function getNextVersion(): string
+            {
+                return 'beforeAfter' . ++$this->lastVersion;
+            }
+
+        };
+        [$entityManager, $logger] = $this->createEntityManagerAndLogger();
+
+        $migrationsService = $this->createMigrationService($entityManager, [], false, $versionProvider);
+
+        $migrationsService->initializeMigrationTable();
+        $logger->clean();
+
+        $migrationFile = $migrationsService->generateMigrationFile([
+            new Statement('SELECT 1', MigrationPhase::BEFORE),
+            new Statement('SELECT 2', MigrationPhase::AFTER),
+            new Statement('SELECT 3'), // no phase defaults to BEFORE
+        ]);
+
+        require $migrationFile->getFilePath();
+
+        $migrationsService->executeMigration($migrationFile->getVersion(), MigrationPhase::BEFORE);
+
+        self::assertSame([
+            'SELECT 1',
+            'SELECT 3',
+            'INSERT INTO migration (version, phase, started_at, finished_at) VALUES (?, ?, ?, ?)',
+        ], $logger->getQueriesPerformed());
+
+        $logger->clean();
+
+        $migrationsService->executeMigration($migrationFile->getVersion(), MigrationPhase::AFTER);
+
+        self::assertSame([
+            'SELECT 2',
+            'INSERT INTO migration (version, phase, started_at, finished_at) VALUES (?, ?, ?, ?)',
+        ], $logger->getQueriesPerformed());
+    }
+
+    public function testPhasesSorting(): void
+    {
+        $versionProvider = new class implements MigrationVersionProvider {
+
+            private int $lastVersion = 0;
+
+            public function getNextVersion(): string
+            {
+                return 'sort' . ++$this->lastVersion;
+            }
+
+        };
+        [$entityManager, $logger] = $this->createEntityManagerAndLogger();
+
+        $statementAnalyser = new class implements MigrationsAnalyzer
+        {
+
+            /**
+             * @param list<string|Statement> $statements
+             * @return list<Statement>
+             */
+            public function analyze(array $statements): array
+            {
+                $result = [];
+
+                foreach ($statements as $statement) {
+                    if (is_string($statement) && str_contains($statement, '2')) {
+                        $result[] = new Statement($statement, MigrationPhase::AFTER);
+                    } elseif (is_string($statement)) {
+                        $result[] = new Statement($statement, MigrationPhase::BEFORE);
+                    } else {
+                        $result[] = $statement;
+                    }
+                }
+
+                return $result;
+            }
+
+        };
+
+        $migrationsService = $this->createMigrationService($entityManager, [], false, $versionProvider, $statementAnalyser);
+
+        $migrationsService->initializeMigrationTable();
+        $logger->clean();
+
+        $migrationFile = $migrationsService->generateMigrationFile(['SELECT 1', 'SELECT 2']);
+
+        require $migrationFile->getFilePath();
+
+        $migrationsService->executeMigration($migrationFile->getVersion(), MigrationPhase::BEFORE);
+
+        self::assertSame([
+            'SELECT 1',
+            'INSERT INTO migration (version, phase, started_at, finished_at) VALUES (?, ?, ?, ?)',
+        ], $logger->getQueriesPerformed());
+
+        $logger->clean();
+
+        $migrationsService->executeMigration($migrationFile->getVersion(), MigrationPhase::AFTER);
+
+        self::assertSame([
+            'SELECT 2',
             'INSERT INTO migration (version, phase, started_at, finished_at) VALUES (?, ?, ?, ?)',
         ], $logger->getQueriesPerformed());
     }
@@ -181,7 +294,8 @@ class MigrationServiceTest extends TestCase
         EntityManagerInterface $entityManager,
         array $excludedTables = [],
         bool $transactional = false,
-        ?MigrationVersionProvider $versionProvider = null
+        ?MigrationVersionProvider $versionProvider = null,
+        ?MigrationsAnalyzer $statementAnalyzer = null
     ): MigrationService
     {
         $migrationsDir = $this->getMigrationsTestDir();
@@ -214,6 +328,7 @@ class MigrationServiceTest extends TestCase
             ),
             null,
             $versionProvider,
+            $statementAnalyzer,
         );
     }
 
