@@ -12,7 +12,7 @@ namespace ShipMonk\Doctrine\Migration;
  * - drop statements
  * - reorder statements
  */
-interface MigrationsAnalyzer
+interface MigrationAnalyzer
 {
 
     /**

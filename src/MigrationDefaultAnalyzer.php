@@ -2,7 +2,7 @@
 
 namespace ShipMonk\Doctrine\Migration;
 
-class MigrationDefaultAnalyzer implements MigrationsAnalyzer
+class MigrationDefaultAnalyzer implements MigrationAnalyzer
 {
 
     /**

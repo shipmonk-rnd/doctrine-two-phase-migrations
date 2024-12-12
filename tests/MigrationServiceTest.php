@@ -179,7 +179,7 @@ class MigrationServiceTest extends TestCase
         };
         [$entityManager, $logger] = $this->createEntityManagerAndLogger();
 
-        $statementAnalyser = new class implements MigrationsAnalyzer
+        $statementAnalyser = new class implements MigrationAnalyzer
         {
 
             /**
@@ -295,7 +295,7 @@ class MigrationServiceTest extends TestCase
         array $excludedTables = [],
         bool $transactional = false,
         ?MigrationVersionProvider $versionProvider = null,
-        ?MigrationsAnalyzer $statementAnalyzer = null
+        ?MigrationAnalyzer $statementAnalyzer = null
     ): MigrationService
     {
         $migrationsDir = $this->getMigrationsTestDir();
