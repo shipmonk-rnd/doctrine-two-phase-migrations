@@ -63,7 +63,7 @@ class MigrationService
         return new $fqn();
     }
 
-    public function executeMigration(string $version, string $phase): MigrationRun
+    public function executeMigration(string $version, MigrationPhase $phase): MigrationRun
     {
         $migration = $this->getMigration($version);
 
@@ -83,17 +83,14 @@ class MigrationService
         return $run;
     }
 
-    private function doExecuteMigration(Migration $migration, string $version, string $phase): MigrationRun
+    private function doExecuteMigration(Migration $migration, string $version, MigrationPhase $phase): MigrationRun
     {
         $startTime = new DateTimeImmutable();
 
-        if ($phase === MigrationPhase::BEFORE) {
-            $migration->before($this->executor);
-        } elseif ($phase === MigrationPhase::AFTER) {
-            $migration->after($this->executor);
-        } else {
-            throw new LogicException("Invalid phase {$phase} given!");
-        }
+        match ($phase) {
+            MigrationPhase::BEFORE => $migration->before($this->executor),
+            MigrationPhase::AFTER => $migration->after($this->executor),
+        };
 
         $endTime = new DateTimeImmutable();
         $run = new MigrationRun($version, $phase, $startTime, $endTime);
@@ -136,13 +133,13 @@ class MigrationService
     /**
      * @return array<string, string>
      */
-    public function getExecutedVersions(string $phase): array
+    public function getExecutedVersions(MigrationPhase $phase): array
     {
         /** @var list<array{version: mixed}> $result */
         $result = $this->connection->executeQuery(
             'SELECT version FROM migration WHERE phase = :phase',
             [
-                'phase' => $phase,
+                'phase' => $phase->value,
             ],
         )->fetchAllAssociative();
 
@@ -168,7 +165,7 @@ class MigrationService
         $microsecondsFormat = 'Y-m-d H:i:s.u';
         $this->connection->insert($this->config->getMigrationTableName(), [
             'version' => $run->getVersion(),
-            'phase' => $run->getPhase(),
+            'phase' => $run->getPhase()->value,
             'started_at' => $run->getStartedAt()->format($microsecondsFormat),
             'finished_at' => $run->getFinishedAt()->format($microsecondsFormat),
         ]);

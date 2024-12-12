@@ -12,7 +12,7 @@ class MigrationRunTest extends TestCase
     {
         $migrationRun = new MigrationRun(
             'version',
-            'phase',
+            MigrationPhase::AFTER,
             new DateTimeImmutable('2021-01-01 00:00:00.000000'),
             new DateTimeImmutable('2021-01-01 00:00:01.000001'),
         );

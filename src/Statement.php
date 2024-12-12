@@ -7,15 +7,9 @@ class Statement
 
     public readonly string $sql;
 
-    /**
-     * @var MigrationPhase::*|null
-     */
-    public readonly ?string $phase;
+    public readonly ?MigrationPhase $phase;
 
-    /**
-     * @param MigrationPhase::*|null $phase
-     */
-    public function __construct(string $sql, ?string $phase = null)
+    public function __construct(string $sql, ?MigrationPhase $phase = null)
     {
         $this->sql = $sql;
         $this->phase = $phase;

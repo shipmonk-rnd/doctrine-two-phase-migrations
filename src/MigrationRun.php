@@ -9,7 +9,7 @@ class MigrationRun
 
     private string $version;
 
-    private string $phase;
+    private MigrationPhase $phase;
 
     private DateTimeImmutable $startedAt;
 
@@ -17,7 +17,7 @@ class MigrationRun
 
     public function __construct(
         string $version,
-        string $phase,
+        MigrationPhase $phase,
         DateTimeImmutable $startedAt,
         DateTimeImmutable $finishedAt
     )
@@ -33,7 +33,7 @@ class MigrationRun
         return $this->version;
     }
 
-    public function getPhase(): string
+    public function getPhase(): MigrationPhase
     {
         return $this->phase;
     }
