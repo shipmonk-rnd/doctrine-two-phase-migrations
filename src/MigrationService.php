@@ -33,14 +33,14 @@ class MigrationService
 
     private MigrationVersionProvider $versionProvider;
 
-    private MigrationsAnalyzer $migrationsAnalyzer;
+    private MigrationAnalyzer $migrationsAnalyzer;
 
     public function __construct(
         EntityManagerInterface $entityManager,
         MigrationConfig $config,
         ?MigrationExecutor $executor = null,
         ?MigrationVersionProvider $versionProvider = null,
-        ?MigrationsAnalyzer $migrationsAnalyzer = null
+        ?MigrationAnalyzer $migrationsAnalyzer = null
     )
     {
         $this->entityManager = $entityManager;

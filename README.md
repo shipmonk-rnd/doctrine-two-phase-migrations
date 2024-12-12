@@ -176,6 +176,10 @@ You can hook into migration execution by implementing `MigrationExecutor` interf
 Implement `executeQuery()` to run checks or other code before/after each query.
 Interface of this method mimics interface of `Doctrine\DBAL\Connection::executeQuery()`.
 
+#### Alter generated migration SQLs:
+You can implement custom `MigrationAnalyzer` and register it as a service.
+This allows you to alter generated SQLs (e.g. add `ALGORITHM=INSTANT`) and assign them to proper phase.
+
 #### Run all queries within transaction:
 
 You can change your template (or a single migration) to extend; `TransactionalMigration`.
