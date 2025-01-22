@@ -17,7 +17,7 @@ class MigrationRunTest extends TestCase
             new DateTimeImmutable('2021-01-01 00:00:01.000001'),
         );
 
-        self::assertEquals(1.000_001, $migrationRun->getDuration());
+        self::assertSame(1.000_001, $migrationRun->getDuration());
     }
 
 }
