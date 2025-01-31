@@ -22,8 +22,7 @@
         "psr/log": "^3",
         "shipmonk/composer-dependency-analyser": "^1.7.0",
         "shipmonk/phpstan-rules": "^4.0.0",
-        "slevomat/coding-standard": "^8.15.0",
-        "symfony/event-dispatcher-contracts": "^3.5"
+        "slevomat/coding-standard": "^8.15.0"
     },
     "autoload": {
         "psr-4": {
