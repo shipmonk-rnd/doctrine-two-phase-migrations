@@ -295,7 +295,7 @@ class MigrationServiceTest extends TestCase
         array $excludedTables = [],
         bool $transactional = false,
         ?MigrationVersionProvider $versionProvider = null,
-        ?MigrationAnalyzer $statementAnalyzer = null
+        ?MigrationAnalyzer $statementAnalyzer = null,
     ): MigrationService
     {
         $migrationsDir = $this->getMigrationsTestDir();

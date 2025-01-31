@@ -40,7 +40,7 @@ class MigrationService
         MigrationConfig $config,
         ?MigrationExecutor $executor = null,
         ?MigrationVersionProvider $versionProvider = null,
-        ?MigrationAnalyzer $migrationsAnalyzer = null
+        ?MigrationAnalyzer $migrationsAnalyzer = null,
     )
     {
         $this->entityManager = $entityManager;

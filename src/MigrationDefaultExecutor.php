@@ -14,7 +14,7 @@ class MigrationDefaultExecutor implements MigrationExecutor
     private Connection $connection;
 
     public function __construct(
-        Connection $connection
+        Connection $connection,
     )
     {
         $this->connection = $connection;

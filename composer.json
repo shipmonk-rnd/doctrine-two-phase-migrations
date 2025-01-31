@@ -18,7 +18,7 @@
         "phpstan/phpstan-phpunit": "^2.0.0",
         "phpstan/phpstan-strict-rules": "^2.0.0",
         "phpunit/phpunit": "^10.5.29",
-        "psr/log": "^1 || ^2 || ^3",
+        "psr/log": "^3",
         "shipmonk/composer-dependency-analyser": "^1.7.0",
         "shipmonk/phpstan-rules": "^4.0.0",
         "slevomat/coding-standard": "^8.15.0"

@@ -19,7 +19,7 @@ class MigrationRun
         string $version,
         MigrationPhase $phase,
         DateTimeImmutable $startedAt,
-        DateTimeImmutable $finishedAt
+        DateTimeImmutable $finishedAt,
     )
     {
         $this->version = $version;

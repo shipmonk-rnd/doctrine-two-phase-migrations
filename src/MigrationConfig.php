@@ -36,7 +36,7 @@ class MigrationConfig
         ?string $migrationClassPrefix = null,
         ?array $excludedTables = null,
         ?string $templateFilePath = null,
-        ?string $templateIndent = null
+        ?string $templateIndent = null,
     )
     {
         $templateFilePathToUse = $templateFilePath ?? __DIR__ . '/template/migration.txt';
