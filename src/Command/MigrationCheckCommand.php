@@ -23,7 +23,7 @@ class MigrationCheckCommand extends Command
     private MigrationService $migrationService;
 
     public function __construct(
-        MigrationService $migrationService
+        MigrationService $migrationService,
     )
     {
         parent::__construct();

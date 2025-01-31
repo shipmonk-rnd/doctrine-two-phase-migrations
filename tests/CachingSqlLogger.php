@@ -19,14 +19,12 @@ class CachingSqlLogger implements LoggerInterface
     private array $queries = [];
 
     /**
-     * @param mixed $level
-     * @param string|Stringable $message
      * @param mixed[] $context
      */
     public function log(
-        $level,
-        $message,
-        array $context = []
+        mixed $level,
+        string|Stringable $message,
+        array $context = [],
     ): void
     {
         if (isset($context['sql'])) {
