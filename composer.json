@@ -8,6 +8,7 @@
         "php": "^8.1",
         "doctrine/dbal": "^3.6.0 || ^4.0.0",
         "doctrine/orm": "^3.0.0",
+        "psr/event-dispatcher": "^1.0",
         "symfony/console": "^5.4.0 || ^6.0.0 || ^7.0.0"
     },
     "require-dev": {
@@ -21,7 +22,8 @@
         "psr/log": "^3",
         "shipmonk/composer-dependency-analyser": "^1.7.0",
         "shipmonk/phpstan-rules": "^4.0.0",
-        "slevomat/coding-standard": "^8.15.0"
+        "slevomat/coding-standard": "^8.15.0",
+        "symfony/event-dispatcher-contracts": "^3.5"
     },
     "autoload": {
         "psr-4": {
