@@ -9,6 +9,10 @@ use Doctrine\DBAL\Schema\Schema;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 use LogicException;
+use Psr\EventDispatcher\EventDispatcherInterface;
+use ShipMonk\Doctrine\Migration\Event\MigrationExecutionFailedEvent;
+use ShipMonk\Doctrine\Migration\Event\MigrationExecutionStartedEvent;
+use ShipMonk\Doctrine\Migration\Event\MigrationExecutionSucceededEvent;
 use Throwable;
 use function file_get_contents;
 use function file_put_contents;
@@ -33,14 +37,17 @@ class MigrationService
 
     private MigrationVersionProvider $versionProvider;
 
-    private MigrationAnalyzer $migrationsAnalyzer;
+    private MigrationAnalyzer $migrationAnalyzer;
+
+    private ?EventDispatcherInterface $eventDispatcher;
 
     public function __construct(
         EntityManagerInterface $entityManager,
         MigrationConfig $config,
         ?MigrationExecutor $executor = null,
         ?MigrationVersionProvider $versionProvider = null,
-        ?MigrationAnalyzer $migrationsAnalyzer = null,
+        ?MigrationAnalyzer $migrationAnalyzer = null,
+        ?EventDispatcherInterface $eventDispatcher = null,
     )
     {
         $this->entityManager = $entityManager;
@@ -48,7 +55,8 @@ class MigrationService
         $this->config = $config;
         $this->executor = $executor ?? new MigrationDefaultExecutor($this->connection);
         $this->versionProvider = $versionProvider ?? new MigrationDefaultVersionProvider();
-        $this->migrationsAnalyzer = $migrationsAnalyzer ?? new MigrationDefaultAnalyzer();
+        $this->migrationAnalyzer = $migrationAnalyzer ?? new MigrationDefaultAnalyzer();
+        $this->eventDispatcher = $eventDispatcher;
     }
 
     public function getConfig(): MigrationConfig
@@ -67,17 +75,22 @@ class MigrationService
     {
         $migration = $this->getMigration($version);
 
-        if ($migration instanceof TransactionalMigration) {
-            try {
-                $this->connection->beginTransaction();
+        $this->eventDispatcher?->dispatch(new MigrationExecutionStartedEvent($migration, $version, $phase));
+
+        try {
+            if ($migration instanceof TransactionalMigration) {
+                $run = $this->connection->transactional(function () use ($migration, $version, $phase): MigrationRun {
+                    return $this->doExecuteMigration($migration, $version, $phase);
+                });
+            } else {
                 $run = $this->doExecuteMigration($migration, $version, $phase);
-                $this->connection->commit();
-            } catch (Throwable $e) {
-                $this->connection->rollBack();
-                throw $e;
             }
-        } else {
-            $run = $this->doExecuteMigration($migration, $version, $phase);
+
+            $this->eventDispatcher?->dispatch(new MigrationExecutionSucceededEvent($migration, $version, $phase));
+
+        } catch (Throwable $e) {
+            $this->eventDispatcher?->dispatch(new MigrationExecutionFailedEvent($migration, $version, $phase, $e));
+            throw $e;
         }
 
         return $run;
@@ -231,7 +244,7 @@ class MigrationService
      */
     public function generateMigrationFile(array $sqls): MigrationFile
     {
-        $statements = $this->migrationsAnalyzer->analyze($sqls);
+        $statements = $this->migrationAnalyzer->analyze($sqls);
         $statementsBefore = $statementsAfter = [];
 
         foreach ($statements as $statement) {

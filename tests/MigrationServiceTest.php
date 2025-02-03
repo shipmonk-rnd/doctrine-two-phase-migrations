@@ -5,6 +5,9 @@ namespace ShipMonk\Doctrine\Migration;
 use Doctrine\ORM\EntityManagerInterface;
 use LogicException;
 use PHPUnit\Framework\TestCase;
+use Psr\EventDispatcher\EventDispatcherInterface;
+use ShipMonk\Doctrine\Migration\Event\MigrationExecutionStartedEvent;
+use ShipMonk\Doctrine\Migration\Event\MigrationExecutionSucceededEvent;
 use function array_map;
 use function file_get_contents;
 use function glob;
@@ -22,9 +25,24 @@ class MigrationServiceTest extends TestCase
 
     public function testInitGenerationExecution(): void
     {
+        $invokedCount = self::exactly(4);
+        $eventDispatcher = $this->createMock(EventDispatcherInterface::class);
+        $eventDispatcher->expects($invokedCount)
+            ->method('dispatch')
+            ->willReturnCallback(static function (object $event) use ($invokedCount): object {
+                match ($invokedCount->numberOfInvocations()) {
+                    1 => self::assertInstanceOf(MigrationExecutionStartedEvent::class, $event, $event::class),
+                    2 => self::assertInstanceOf(MigrationExecutionSucceededEvent::class, $event, $event::class),
+                    3 => self::assertInstanceOf(MigrationExecutionStartedEvent::class, $event, $event::class),
+                    4 => self::assertInstanceOf(MigrationExecutionSucceededEvent::class, $event, $event::class),
+                    default => self::fail('Unexpected event'),
+                };
+                return $event;
+            });
+
         [$entityManager] = $this->createEntityManagerAndLogger();
         $connection = $entityManager->getConnection();
-        $service = $this->createMigrationService($entityManager);
+        $service = $this->createMigrationService($entityManager, eventDispatcher: $eventDispatcher);
 
         $migrationTableName = $service->getConfig()->getMigrationTableName();
 
@@ -134,7 +152,7 @@ class MigrationServiceTest extends TestCase
         };
         [$entityManager, $logger] = $this->createEntityManagerAndLogger();
 
-        $migrationsService = $this->createMigrationService($entityManager, [], false, $versionProvider);
+        $migrationsService = $this->createMigrationService($entityManager, versionProvider: $versionProvider);
 
         $migrationsService->initializeMigrationTable();
         $logger->clean();
@@ -296,6 +314,7 @@ class MigrationServiceTest extends TestCase
         bool $transactional = false,
         ?MigrationVersionProvider $versionProvider = null,
         ?MigrationAnalyzer $statementAnalyzer = null,
+        ?EventDispatcherInterface $eventDispatcher = null,
     ): MigrationService
     {
         $migrationsDir = $this->getMigrationsTestDir();
@@ -329,6 +348,7 @@ class MigrationServiceTest extends TestCase
             null,
             $versionProvider,
             $statementAnalyzer,
+            $eventDispatcher,
         );
     }
 

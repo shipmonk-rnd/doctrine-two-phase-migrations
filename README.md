@@ -177,12 +177,23 @@ Implement `executeQuery()` to run checks or other code before/after each query.
 Interface of this method mimics interface of `Doctrine\DBAL\Connection::executeQuery()`.
 
 #### Alter generated migration SQLs:
+
 You can implement custom `MigrationAnalyzer` and register it as a service.
 This allows you to alter generated SQLs (e.g. add `ALGORITHM=INSTANT`) and assign them to proper phase.
 
+#### Hook to migration execution:
+
+If you pass `Psr\EventDispatcher\EventDispatcherInterface` to `MigrationService`, you can hook into migration execution.
+Dispatched events are:
+- `MigrationExecutionStartedEvent`
+- `MigrationExecutionSucceededEvent`
+- `MigrationExecutionFailedEvent`
+
+All events have `MigrationPhase` enum and `Migration` instance available.
+
 #### Run all queries within transaction:
 
-You can change your template (or a single migration) to extend; `TransactionalMigration`.
+You can change your template (or a single migration) to extend `TransactionalMigration`.
 That causes each phases to be executed within migration.
 Be aware that many databases (like MySQL) does not support transaction over DDL operations (ALTER and such).
 
