@@ -21,6 +21,7 @@
         "phpunit/phpunit": "^10.5.29",
         "psr/log": "^3",
         "shipmonk/composer-dependency-analyser": "^1.7.0",
+        "shipmonk/dead-code-detector": "^0.9.2",
         "shipmonk/phpstan-rules": "^4.0.0",
         "slevomat/coding-standard": "^8.15.0"
     },
