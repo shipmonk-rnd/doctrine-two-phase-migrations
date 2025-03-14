@@ -5,6 +5,7 @@ includes:
     - ./vendor/phpstan/phpstan-phpunit/extension.neon
     - ./vendor/phpstan/phpstan-phpunit/rules.neon
     - ./vendor/shipmonk/phpstan-rules/rules.neon
+    - ./vendor/shipmonk/dead-code-detector/rules.neon
 
 parameters:
     paths:
@@ -37,3 +38,13 @@ parameters:
             path: tests\CachingSqlLogger.php
             reportUnmatched: false
             count: 1
+
+        -
+            identifier: shipmonk.deadMethod
+            paths:
+                # intentional, dummy code
+                - tests/Entity.php
+
+                # executors are called within generated migration files
+                - src/MigrationExecutor.php
+                - src/MigrationDefaultExecutor.php

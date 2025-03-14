@@ -21,17 +21,4 @@ class CachingSqlLoggerMiddleware implements Middleware
         return new LoggingDriver($driver, $this->sqlLogger);
     }
 
-    /**
-     * @return list<string>
-     */
-    public function getQueriesPerformed(): array
-    {
-        return $this->sqlLogger->getQueriesPerformed();
-    }
-
-    public function clean(): void
-    {
-        $this->sqlLogger->clean();
-    }
-
 }
