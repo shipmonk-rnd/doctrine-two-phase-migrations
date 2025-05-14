@@ -40,6 +40,14 @@ parameters:
             count: 1
 
         -
+            identifier: method.internal
+            path: tests/*
+
+        -
+            identifier: method.internalClass
+            path: tests/*
+
+        -
             identifier: shipmonk.deadMethod
             paths:
                 # intentional, dummy code
