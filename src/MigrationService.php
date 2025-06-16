@@ -71,7 +71,10 @@ class MigrationService
         return new $fqn();
     }
 
-    public function executeMigration(string $version, MigrationPhase $phase): MigrationRun
+    public function executeMigration(
+        string $version,
+        MigrationPhase $phase,
+    ): MigrationRun
     {
         $migration = $this->getMigration($version);
 
@@ -96,7 +99,11 @@ class MigrationService
         return $run;
     }
 
-    private function doExecuteMigration(Migration $migration, string $version, MigrationPhase $phase): MigrationRun
+    private function doExecuteMigration(
+        Migration $migration,
+        string $version,
+        MigrationPhase $phase,
+    ): MigrationRun
     {
         $startTime = new DateTimeImmutable();
 
@@ -114,8 +121,9 @@ class MigrationService
     }
 
     /**
-     * @phpstan-impure
      * @return array<string, string>
+     *
+     * @phpstan-impure
      */
     public function getPreparedVersions(): array
     {

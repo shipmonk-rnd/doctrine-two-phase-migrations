@@ -9,7 +9,10 @@ class MigrationFile
 
     private string $version;
 
-    public function __construct(string $filePath, string $version)
+    public function __construct(
+        string $filePath,
+        string $version,
+    )
     {
         $this->filePath = $filePath;
         $this->version = $version;
