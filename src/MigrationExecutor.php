@@ -15,7 +15,11 @@ interface MigrationExecutor
      * @param list<mixed>|array<string, mixed> $params
      * @param array<non-negative-int|string, string|Type|ParameterType|ArrayParameterType> $types
      */
-    public function executeQuery(string $statement, array $params = [], array $types = []): Result;
+    public function executeQuery(
+        string $statement,
+        array $params = [],
+        array $types = [],
+    ): Result;
 
     public function getConnection(): Connection;
 

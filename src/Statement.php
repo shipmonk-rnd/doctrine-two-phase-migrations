@@ -9,7 +9,10 @@ class Statement
 
     public readonly ?MigrationPhase $phase;
 
-    public function __construct(string $sql, ?MigrationPhase $phase = null)
+    public function __construct(
+        string $sql,
+        ?MigrationPhase $phase = null,
+    )
     {
         $this->sql = $sql;
         $this->phase = $phase;

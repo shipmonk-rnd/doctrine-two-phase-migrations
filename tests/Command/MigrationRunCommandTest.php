@@ -81,7 +81,10 @@ class MigrationRunCommandTest extends TestCase
         $tester->execute([]);
     }
 
-    private function runPhase(MigrationRunCommand $command, string $phase): string
+    private function runPhase(
+        MigrationRunCommand $command,
+        string $phase,
+    ): string
     {
         $input = new ArrayInput([MigrationRunCommand::ARGUMENT_PHASE => $phase], $command->getDefinition());
         $output = new BufferedOutput();

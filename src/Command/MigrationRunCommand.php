@@ -43,7 +43,10 @@ class MigrationRunCommand extends Command
             ->addArgument(self::ARGUMENT_PHASE, InputArgument::REQUIRED, MigrationPhase::BEFORE->value . '|' . MigrationPhase::AFTER->value . '|' . self::PHASE_BOTH);
     }
 
-    public function execute(InputInterface $input, OutputInterface $output): int
+    public function execute(
+        InputInterface $input,
+        OutputInterface $output,
+    ): int
     {
         $phaseArgument = $input->getArgument(self::ARGUMENT_PHASE);
 
@@ -66,7 +69,10 @@ class MigrationRunCommand extends Command
     /**
      * @param list<MigrationPhase> $phases
      */
-    private function executeMigrations(OutputInterface $output, array $phases): bool
+    private function executeMigrations(
+        OutputInterface $output,
+        array $phases,
+    ): bool
     {
         $executed = [];
 
@@ -95,7 +101,11 @@ class MigrationRunCommand extends Command
         return $migratedSomething;
     }
 
-    private function executeMigration(OutputInterface $output, string $version, MigrationPhase $phase): void
+    private function executeMigration(
+        OutputInterface $output,
+        string $version,
+        MigrationPhase $phase,
+    ): void
     {
         $output->write("Executing migration {$version} phase {$phase->value}... ");
 
