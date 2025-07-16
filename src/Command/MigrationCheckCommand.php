@@ -4,6 +4,7 @@ namespace ShipMonk\Doctrine\Migration\Command;
 
 use ShipMonk\Doctrine\Migration\MigrationPhase;
 use ShipMonk\Doctrine\Migration\MigrationService;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -12,6 +13,7 @@ use function count;
 use function implode;
 use const PHP_EOL;
 
+#[AsCommand('migration:check', description: 'Check if entities are in sync with database and if migrations were executed')]
 class MigrationCheckCommand extends Command
 {
 
@@ -28,16 +30,6 @@ class MigrationCheckCommand extends Command
     {
         parent::__construct();
         $this->migrationService = $migrationService;
-    }
-
-    public static function getDefaultName(): string
-    {
-        return 'migration:check';
-    }
-
-    protected function configure(): void
-    {
-        $this->setDescription('Check if entities are in sync with database and if migrations were executed');
     }
 
     public function execute(

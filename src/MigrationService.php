@@ -5,6 +5,10 @@ namespace ShipMonk\Doctrine\Migration;
 use DateTimeImmutable;
 use DirectoryIterator;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Schema\ComparatorConfig;
+use Doctrine\DBAL\Schema\Name\Identifier;
+use Doctrine\DBAL\Schema\Name\UnqualifiedName;
+use Doctrine\DBAL\Schema\PrimaryKeyConstraintEditor;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
@@ -200,13 +204,20 @@ class MigrationService
             return false;
         }
 
+        $primaryKey = (new PrimaryKeyConstraintEditor())
+            ->setColumnNames(
+                new UnqualifiedName(Identifier::unquoted('version')),
+                new UnqualifiedName(Identifier::unquoted('phase')),
+            )
+            ->create();
+
         $schema = new Schema();
         $table = $schema->createTable($migrationTableName);
         $table->addColumn('version', 'string', ['length' => 20]);
         $table->addColumn('phase', 'string', ['length' => 10]);
         $table->addColumn('started_at', 'string', ['length' => 30]); // string to support microseconds
         $table->addColumn('finished_at', 'string', ['length' => 30]);
-        $table->setPrimaryKey(['version', 'phase']);
+        $table->addPrimaryKeyConstraint($primaryKey);
 
         foreach ($schema->toSql($this->connection->getDatabasePlatform()) as $sql) {
             $this->connection->executeQuery($sql);
@@ -232,7 +243,8 @@ class MigrationService
         $this->excludeTablesFromSchema($fromSchema);
         $this->excludeTablesFromSchema($toSchema);
 
-        $schemaComparator = $schemaManager->createComparator();
+        $comparatorConfig = (new ComparatorConfig())->withReportModifiedIndexes(false);
+        $schemaComparator = $schemaManager->createComparator($comparatorConfig);
         $schemaDiff = $schemaComparator->compareSchemas($fromSchema, $toSchema);
 
         return $platform->getAlterSchemaSQL($schemaDiff);

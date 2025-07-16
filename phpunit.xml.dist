@@ -9,8 +9,15 @@
         failOnRisky="true"
         failOnWarning="true"
         cacheResultFile="cache/phpunit.result.cache"
+        displayDetailsOnTestsThatTriggerDeprecations="true"
 >
     <php>
         <ini name="error_reporting" value="-1"/>
+        <env name="DOCTRINE_DEPRECATIONS" value="trigger"/>
     </php>
+    <source ignoreSuppressionOfDeprecations="true">
+        <include>
+            <directory>tests</directory>
+        </include>
+    </source>
 </phpunit>
