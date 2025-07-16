@@ -8,7 +8,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\ComparatorConfig;
 use Doctrine\DBAL\Schema\Name\Identifier;
 use Doctrine\DBAL\Schema\Name\UnqualifiedName;
-use Doctrine\DBAL\Schema\PrimaryKeyConstraintEditor;
+use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
@@ -204,7 +204,7 @@ class MigrationService
             return false;
         }
 
-        $primaryKey = (new PrimaryKeyConstraintEditor())
+        $primaryKey = PrimaryKeyConstraint::editor()
             ->setColumnNames(
                 new UnqualifiedName(Identifier::unquoted('version')),
                 new UnqualifiedName(Identifier::unquoted('phase')),

@@ -5,7 +5,7 @@
         "MIT"
     ],
     "require": {
-        "php": "^8.1",
+        "php": "^8.2",
         "doctrine/dbal": "^4.3.0",
         "doctrine/orm": "^3.3.3",
         "psr/event-dispatcher": "^1.0",
