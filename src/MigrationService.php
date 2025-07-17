@@ -205,10 +205,7 @@ class MigrationService
         }
 
         $primaryKey = PrimaryKeyConstraint::editor()
-            ->setColumnNames(
-                new UnqualifiedName(Identifier::unquoted('version')),
-                new UnqualifiedName(Identifier::unquoted('phase')),
-            )
+            ->setUnquotedColumnNames('version', 'phase')
             ->create();
 
         $schema = new Schema();
