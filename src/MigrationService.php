@@ -6,8 +6,6 @@ use DateTimeImmutable;
 use DirectoryIterator;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\ComparatorConfig;
-use Doctrine\DBAL\Schema\Name\Identifier;
-use Doctrine\DBAL\Schema\Name\UnqualifiedName;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\ORM\EntityManagerInterface;
