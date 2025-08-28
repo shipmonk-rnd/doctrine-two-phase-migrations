@@ -3,11 +3,13 @@
 namespace ShipMonk\Doctrine\Migration\Command;
 
 use ShipMonk\Doctrine\Migration\MigrationService;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use function count;
 
+#[AsCommand('migration:generate', description: 'Generate migration class')]
 class MigrationGenerateCommand extends Command
 {
 
@@ -19,16 +21,6 @@ class MigrationGenerateCommand extends Command
     {
         parent::__construct();
         $this->migrationService = $migrationService;
-    }
-
-    public static function getDefaultName(): string
-    {
-        return 'migration:generate';
-    }
-
-    protected function configure(): void
-    {
-        $this->setDescription('Generate migration class');
     }
 
     public function execute(

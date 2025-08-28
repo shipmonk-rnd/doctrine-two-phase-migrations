@@ -53,7 +53,7 @@ class MigrationServiceTest extends TestCase
 
         self::assertTrue($initialized1);
         self::assertFalse($initialized2);
-        self::assertSame(['CREATE TABLE entity (id VARCHAR(255) NOT NULL, PRIMARY KEY(id))'], $sqls);
+        self::assertSame(['CREATE TABLE entity (id VARCHAR(255) NOT NULL, PRIMARY KEY (id))'], $sqls);
 
         self::assertEquals([], $service->getExecutedVersions(MigrationPhase::BEFORE));
         self::assertEquals([], $service->getExecutedVersions(MigrationPhase::AFTER));
@@ -265,7 +265,7 @@ class MigrationServiceTest extends TestCase
         self::assertTrue($table->hasColumn('phase'));
         self::assertTrue($table->hasColumn('started_at'));
         self::assertTrue($table->hasColumn('finished_at'));
-        self::assertNotNull($table->getPrimaryKey());
+        self::assertNotNull($table->getPrimaryKeyConstraint());
     }
 
     public function testGetPreparedVersions(): void
@@ -289,14 +289,14 @@ class MigrationServiceTest extends TestCase
         $entityManager->getConnection()->executeQuery('CREATE TABLE excluded (id INT)');
 
         self::assertEquals([
-            'CREATE TABLE entity (id VARCHAR(255) NOT NULL, PRIMARY KEY(id))',
+            'CREATE TABLE entity (id VARCHAR(255) NOT NULL, PRIMARY KEY (id))',
             'DROP TABLE excluded',
         ], $service->generateDiffSqls());
 
         $service = $this->createMigrationService($entityManager, ['excluded']);
 
         self::assertEquals([
-            'CREATE TABLE entity (id VARCHAR(255) NOT NULL, PRIMARY KEY(id))',
+            'CREATE TABLE entity (id VARCHAR(255) NOT NULL, PRIMARY KEY (id))',
         ], $service->generateDiffSqls());
 
         // cannot create excluded table even when defined in metadata - it would always fail in migration:check

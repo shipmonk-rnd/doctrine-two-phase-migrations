@@ -5,6 +5,7 @@ namespace ShipMonk\Doctrine\Migration\Command;
 use LogicException;
 use ShipMonk\Doctrine\Migration\MigrationPhase;
 use ShipMonk\Doctrine\Migration\MigrationService;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -14,6 +15,7 @@ use function is_string;
 use function round;
 use function sprintf;
 
+#[AsCommand('migration:run', description: 'Run all not executed migrations with specified phase')]
 class MigrationRunCommand extends Command
 {
 
@@ -31,16 +33,13 @@ class MigrationRunCommand extends Command
         $this->migrationService = $migrationService;
     }
 
-    public static function getDefaultName(): string
-    {
-        return 'migration:run';
-    }
-
     protected function configure(): void
     {
-        $this
-            ->setDescription('Run all not executed migrations with specified phase')
-            ->addArgument(self::ARGUMENT_PHASE, InputArgument::REQUIRED, MigrationPhase::BEFORE->value . '|' . MigrationPhase::AFTER->value . '|' . self::PHASE_BOTH);
+        $this->addArgument(
+            self::ARGUMENT_PHASE,
+            InputArgument::REQUIRED,
+            MigrationPhase::BEFORE->value . '|' . MigrationPhase::AFTER->value . '|' . self::PHASE_BOTH,
+        );
     }
 
     public function execute(
