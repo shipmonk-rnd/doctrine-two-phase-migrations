@@ -36,7 +36,7 @@ class MigrationGenerateCommand extends Command
 
         $file = $this->migrationService->generateMigrationFile($sqls);
 
-        $output->writeln("<info>Migration version {$file->getVersion()} was generated</info>");
+        $output->writeln("<info>Migration version {$file->version} was generated</info>");
         return 0;
     }
 

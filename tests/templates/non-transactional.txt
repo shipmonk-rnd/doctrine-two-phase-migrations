@@ -6,7 +6,7 @@ use Doctrine\DBAL\Connection;
 use ShipMonk\Doctrine\Migration\Migration;
 use ShipMonk\Doctrine\Migration\MigrationExecutor;
 
-class Migration%version% implements Migration
+class %className% implements Migration
 {
 
     public function before(MigrationExecutor $executor): void
