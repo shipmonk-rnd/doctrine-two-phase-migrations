@@ -16,15 +16,11 @@ use ShipMonk\Doctrine\Migration\Event\MigrationExecutionFailedEvent;
 use ShipMonk\Doctrine\Migration\Event\MigrationExecutionStartedEvent;
 use ShipMonk\Doctrine\Migration\Event\MigrationExecutionSucceededEvent;
 use Throwable;
-use function file_get_contents;
 use function file_put_contents;
-use function implode;
 use function is_string;
 use function ksort;
-use function sprintf;
 use function str_replace;
 use function strpos;
-use const PHP_EOL;
 
 class MigrationService
 {
@@ -43,6 +39,8 @@ class MigrationService
 
     private ?EventDispatcherInterface $eventDispatcher;
 
+    private MigrationGenerator $generator;
+
     public function __construct(
         EntityManagerInterface $entityManager,
         MigrationConfig $config,
@@ -50,6 +48,7 @@ class MigrationService
         ?MigrationVersionProvider $versionProvider = null,
         ?MigrationAnalyzer $migrationAnalyzer = null,
         ?EventDispatcherInterface $eventDispatcher = null,
+        ?MigrationGenerator $generator = null,
     )
     {
         $this->entityManager = $entityManager;
@@ -59,6 +58,10 @@ class MigrationService
         $this->versionProvider = $versionProvider ?? new MigrationDefaultVersionProvider();
         $this->migrationAnalyzer = $migrationAnalyzer ?? new MigrationDefaultAnalyzer();
         $this->eventDispatcher = $eventDispatcher;
+        $this->generator = $generator ?? new DefaultMigrationGenerator(
+            $config->getTemplateFilePath(),
+            $config->getTemplateIndent(),
+        );
     }
 
     public function getConfig(): MigrationConfig
@@ -68,7 +71,7 @@ class MigrationService
 
     private function getMigration(string $version): Migration
     {
-        /** @var class-string<Migration> $fqn allow-narrowing */
+        /** @var class-string<Migration> $fqn */
         $fqn = '\\' . $this->config->getMigrationClassNamespace() . '\\' . $this->config->getMigrationClassPrefix() . $version;
         return new $fqn();
     }
@@ -255,47 +258,27 @@ class MigrationService
     }
 
     /**
-     * @param list<string|Statement> $sqls
+     * @param list<string> $sqls
      */
     public function generateMigrationFile(array $sqls): MigrationFile
     {
         $statements = $this->migrationAnalyzer->analyze($sqls);
-        $statementsBefore = $statementsAfter = [];
-
-        foreach ($statements as $statement) {
-            if ($statement->phase === MigrationPhase::AFTER) {
-                $statementsAfter[] = sprintf("\$executor->executeQuery('%s');", str_replace("'", "\'", $statement->sql));
-            } else {
-                $statementsBefore[] = sprintf("\$executor->executeQuery('%s');", str_replace("'", "\'", $statement->sql));
-            }
-        }
-
-        $templateFilePath = $this->config->getTemplateFilePath();
-        $templateIndent = $this->config->getTemplateIndent();
-        $migrationsDir = $this->config->getMigrationsDirectory();
-        $migrationClassPrefix = $this->config->getMigrationClassPrefix();
-        $migrationClassNamespace = $this->config->getMigrationClassNamespace();
-
         $version = $this->versionProvider->getNextVersion();
-        $template = file_get_contents($templateFilePath);
 
-        if ($template === false) {
-            throw new LogicException("Unable to read $templateFilePath");
-        }
+        $className = $this->config->getMigrationClassPrefix() . $version;
+        $namespace = $this->config->getMigrationClassNamespace();
+        $content = $this->generator->generate($className, $namespace, $statements);
 
-        $template = str_replace('%namespace%', $migrationClassNamespace, $template);
-        $template = str_replace('%version%', $version, $template);
-        $template = str_replace('%statements%', implode(PHP_EOL . $templateIndent, $statementsBefore), $template);
-        $template = str_replace('%statementsAfter%', implode(PHP_EOL . $templateIndent, $statementsAfter), $template);
+        $filePath = $this->config->getMigrationsDirectory() . '/' . $className . '.php';
+        $migrationFile = new MigrationFile($filePath, $version, $content);
 
-        $filePath = $migrationsDir . '/' . $migrationClassPrefix . $version . '.php';
-        $saved = file_put_contents($filePath, $template);
+        $saved = file_put_contents($migrationFile->filePath, $migrationFile->content);
 
         if ($saved === false) {
-            throw new LogicException("Unable to write new migration to $filePath");
+            throw new LogicException("Unable to write new migration to {$migrationFile->filePath}");
         }
 
-        return new MigrationFile($filePath, $version);
+        return $migrationFile;
     }
 
 }

@@ -2,20 +2,14 @@
 
 namespace ShipMonk\Doctrine\Migration;
 
-class Statement
+readonly class Statement
 {
 
-    public readonly string $sql;
-
-    public readonly ?MigrationPhase $phase;
-
     public function __construct(
-        string $sql,
-        ?MigrationPhase $phase = null,
+        public string $sql,
+        public MigrationPhase $phase,
     )
     {
-        $this->sql = $sql;
-        $this->phase = $phase;
     }
 
 }
