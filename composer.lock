@@ -2943,16 +2943,11 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "2.1.29",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/phpstan/phpstan-phar-composer-source.git",
-                "reference": "git"
-            },
+            "version": "2.1.32",
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/d618573eed4a1b6b75e37b2e0b65ac65c885d88e",
-                "reference": "d618573eed4a1b6b75e37b2e0b65ac65c885d88e",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/e126cad1e30a99b137b8ed75a85a676450ebb227",
+                "reference": "e126cad1e30a99b137b8ed75a85a676450ebb227",
                 "shasum": ""
             },
             "require": {
@@ -2997,25 +2992,25 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-09-25T06:58:18+00:00"
+            "time": "2025-11-11T15:18:17+00:00"
         },
         {
             "name": "phpstan/phpstan-phpunit",
-            "version": "2.0.7",
+            "version": "2.0.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpstan/phpstan-phpunit.git",
-                "reference": "9a9b161baee88a5f5c58d816943cff354ff233dc"
+                "reference": "2fe9fbeceaf76dd1ebaa7bbbb25e2fb5e59db2fe"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan-phpunit/zipball/9a9b161baee88a5f5c58d816943cff354ff233dc",
-                "reference": "9a9b161baee88a5f5c58d816943cff354ff233dc",
+                "url": "https://api.github.com/repos/phpstan/phpstan-phpunit/zipball/2fe9fbeceaf76dd1ebaa7bbbb25e2fb5e59db2fe",
+                "reference": "2fe9fbeceaf76dd1ebaa7bbbb25e2fb5e59db2fe",
                 "shasum": ""
             },
             "require": {
                 "php": "^7.4 || ^8.0",
-                "phpstan/phpstan": "^2.1.18"
+                "phpstan/phpstan": "^2.1.32"
             },
             "conflict": {
                 "phpunit/phpunit": "<7.0"
@@ -3048,9 +3043,9 @@
             "description": "PHPUnit extensions and rules for PHPStan",
             "support": {
                 "issues": "https://github.com/phpstan/phpstan-phpunit/issues",
-                "source": "https://github.com/phpstan/phpstan-phpunit/tree/2.0.7"
+                "source": "https://github.com/phpstan/phpstan-phpunit/tree/2.0.8"
             },
-            "time": "2025-07-13T11:31:46+00:00"
+            "time": "2025-11-11T07:55:22+00:00"
         },
         {
             "name": "phpstan/phpstan-strict-rules",
@@ -4533,16 +4528,16 @@
         },
         {
             "name": "shipmonk/composer-dependency-analyser",
-            "version": "1.8.3",
+            "version": "1.8.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/shipmonk-rnd/composer-dependency-analyser.git",
-                "reference": "ca6b2725cd4854d97c1ce08e6954a74fbdd25372"
+                "reference": "975e5873b519d5180b1017a5dfb43d80781abd45"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/shipmonk-rnd/composer-dependency-analyser/zipball/ca6b2725cd4854d97c1ce08e6954a74fbdd25372",
-                "reference": "ca6b2725cd4854d97c1ce08e6954a74fbdd25372",
+                "url": "https://api.github.com/repos/shipmonk-rnd/composer-dependency-analyser/zipball/975e5873b519d5180b1017a5dfb43d80781abd45",
+                "reference": "975e5873b519d5180b1017a5dfb43d80781abd45",
                 "shasum": ""
             },
             "require": {
@@ -4551,15 +4546,15 @@
                 "php": "^7.2 || ^8.0"
             },
             "require-dev": {
-                "editorconfig-checker/editorconfig-checker": "^10.6.0",
+                "editorconfig-checker/editorconfig-checker": "^10.7.0",
                 "ergebnis/composer-normalize": "^2.19.0",
                 "ext-dom": "*",
                 "ext-libxml": "*",
                 "phpcompatibility/php-compatibility": "^9.3.5",
-                "phpstan/phpstan": "^1.12.3",
-                "phpstan/phpstan-phpunit": "^1.4.0",
-                "phpstan/phpstan-strict-rules": "^1.6.0",
-                "phpunit/phpunit": "^8.5.39 || ^9.6.20",
+                "phpstan/phpstan": "^1.12.26",
+                "phpstan/phpstan-phpunit": "^1.4.2",
+                "phpstan/phpstan-strict-rules": "^1.6.2",
+                "phpunit/phpunit": "^8.5.42 || ^9.6.23",
                 "shipmonk/name-collision-detector": "^2.1.1",
                 "slevomat/coding-standard": "^8.15.0"
             },
@@ -4593,9 +4588,9 @@
             ],
             "support": {
                 "issues": "https://github.com/shipmonk-rnd/composer-dependency-analyser/issues",
-                "source": "https://github.com/shipmonk-rnd/composer-dependency-analyser/tree/1.8.3"
+                "source": "https://github.com/shipmonk-rnd/composer-dependency-analyser/tree/1.8.4"
             },
-            "time": "2025-02-10T13:31:57+00:00"
+            "time": "2025-11-25T14:38:16+00:00"
         },
         {
             "name": "shipmonk/dead-code-detector",
