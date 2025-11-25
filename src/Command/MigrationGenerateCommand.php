@@ -2,6 +2,7 @@
 
 namespace ShipMonk\Doctrine\Migration\Command;
 
+use Psr\Log\LoggerInterface;
 use ShipMonk\Doctrine\Migration\MigrationService;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -15,14 +16,12 @@ class MigrationGenerateCommand extends Command
 
     public const NAME = 'migration:generate';
 
-    private MigrationService $migrationService;
-
     public function __construct(
-        MigrationService $migrationService,
+        private readonly MigrationService $migrationService,
+        private readonly LoggerInterface $logger,
     )
     {
         parent::__construct();
-        $this->migrationService = $migrationService;
     }
 
     public function execute(
@@ -30,15 +29,29 @@ class MigrationGenerateCommand extends Command
         OutputInterface $output,
     ): int
     {
-        $sqls = $this->migrationService->generateDiffSqls();
+        $this->logger->info('Starting migration generation');
 
-        if (count($sqls) === 0) {
-            $output->writeln('<comment>No changes found, creating empty migration class...</comment>');
+        $sqls = $this->migrationService->generateDiffSqls();
+        $sqlCount = count($sqls);
+
+        if ($sqlCount === 0) {
+            $this->logger->notice('No schema changes found, creating empty migration class');
+        } else {
+            $this->logger->info('Schema changes detected', [
+                'sqlCount' => $sqlCount,
+                'sqls' => $sqls,
+            ]);
         }
 
         $file = $this->migrationService->generateMigrationFile($sqls);
 
-        $output->writeln("<info>Migration version {$file->version} was generated</info>");
+        $this->logger->info('Migration generated successfully', [
+            'version' => $file->version,
+            'filePath' => $file->filePath,
+            'sqlCount' => $sqlCount,
+            'isEmpty' => $sqlCount === 0,
+        ]);
+
         return 0;
     }
 
