@@ -3,6 +3,7 @@
 namespace ShipMonk\Doctrine\Migration\Command;
 
 use LogicException;
+use Psr\Log\LoggerInterface;
 use ShipMonk\Doctrine\Migration\MigrationPhase;
 use ShipMonk\Doctrine\Migration\MigrationService;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -10,10 +11,10 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use function array_map;
+use function count;
 use function in_array;
 use function is_string;
-use function round;
-use function sprintf;
 
 #[AsCommand('migration:run', description: 'Run all not executed migrations with specified phase')]
 class MigrationRunCommand extends Command
@@ -22,15 +23,12 @@ class MigrationRunCommand extends Command
     public const ARGUMENT_PHASE = 'phase';
     public const PHASE_BOTH = 'both';
 
-    private MigrationService $migrationService;
-
     public function __construct(
-        MigrationService $migrationService,
+        private readonly MigrationService $migrationService,
+        private readonly LoggerInterface $logger,
     )
     {
         parent::__construct();
-
-        $this->migrationService = $migrationService;
     }
 
     protected function configure(): void
@@ -53,13 +51,23 @@ class MigrationRunCommand extends Command
             throw new LogicException('Can never happen for required non-array argument');
         }
 
-        $migratedSomething = $this->executeMigrations(
-            $output,
-            $this->getPhasesToRun($phaseArgument),
-        );
+        $phases = $this->getPhasesToRun($phaseArgument);
+
+        $this->logger->info('Starting migration execution', [
+            'phaseArgument' => $phaseArgument,
+            'phases' => array_map(static fn (MigrationPhase $phase): string => $phase->value, $phases),
+        ]);
+
+        $migratedSomething = $this->executeMigrations($phases);
 
         if (!$migratedSomething) {
-            $output->writeln("<comment>No migration executed (phase {$phaseArgument}).</comment>");
+            $this->logger->notice('No migrations to execute', [
+                'phaseArgument' => $phaseArgument,
+            ]);
+        } else {
+            $this->logger->info('Migration execution completed', [
+                'phaseArgument' => $phaseArgument,
+            ]);
         }
 
         return 0;
@@ -68,10 +76,7 @@ class MigrationRunCommand extends Command
     /**
      * @param list<MigrationPhase> $phases
      */
-    private function executeMigrations(
-        OutputInterface $output,
-        array $phases,
-    ): bool
+    private function executeMigrations(array $phases): bool
     {
         $executed = [];
 
@@ -86,13 +91,30 @@ class MigrationRunCommand extends Command
         $preparedVersions = $this->migrationService->getPreparedVersions();
         $migratedSomething = false;
 
+        $pendingMigrations = [];
+
+        foreach ($preparedVersions as $version) {
+            foreach ($phases as $phase) {
+                if (!isset($executed[$phase->value][$version])) {
+                    $pendingMigrations[] = ['version' => $version, 'phase' => $phase->value];
+                }
+            }
+        }
+
+        if (count($pendingMigrations) > 0) {
+            $this->logger->info('Pending migrations found', [
+                'count' => count($pendingMigrations),
+                'migrations' => $pendingMigrations,
+            ]);
+        }
+
         foreach ($preparedVersions as $version) {
             foreach ($phases as $phase) {
                 if (isset($executed[$phase->value][$version])) {
                     continue;
                 }
 
-                $this->executeMigration($output, $version, $phase);
+                $this->executeMigration($version, $phase);
                 $migratedSomething = true;
             }
         }
@@ -101,17 +123,24 @@ class MigrationRunCommand extends Command
     }
 
     private function executeMigration(
-        OutputInterface $output,
         string $version,
         MigrationPhase $phase,
     ): void
     {
-        $output->write("Executing migration {$version} phase {$phase->value}... ");
+        $this->logger->info('Executing migration', [
+            'version' => $version,
+            'phase' => $phase->value,
+        ]);
 
         $run = $this->migrationService->executeMigration($version, $phase);
 
-        $elapsed = sprintf('%.3f', round($run->getDuration(), 3));
-        $output->writeln("<info>done</info>, {$elapsed} s elapsed.");
+        $this->logger->info('Migration executed successfully', [
+            'version' => $version,
+            'phase' => $phase->value,
+            'durationSeconds' => $run->getDuration(),
+            'startedAt' => $run->getStartedAt()->format('Y-m-d H:i:s.u'),
+            'finishedAt' => $run->getFinishedAt()->format('Y-m-d H:i:s.u'),
+        ]);
     }
 
     /**

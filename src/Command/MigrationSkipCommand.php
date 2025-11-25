@@ -3,6 +3,7 @@
 namespace ShipMonk\Doctrine\Migration\Command;
 
 use DateTimeImmutable;
+use Psr\Log\LoggerInterface;
 use ShipMonk\Doctrine\Migration\MigrationPhase;
 use ShipMonk\Doctrine\Migration\MigrationRun;
 use ShipMonk\Doctrine\Migration\MigrationService;
@@ -11,17 +12,19 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use function array_diff;
+use function array_values;
+use function count;
 
 #[AsCommand('migration:skip', description: 'Mark all not executed migrations as executed in both phases')]
 class MigrationSkipCommand extends Command
 {
 
-    private MigrationService $migrationService;
-
-    public function __construct(MigrationService $migrationService)
+    public function __construct(
+        private readonly MigrationService $migrationService,
+        private readonly LoggerInterface $logger,
+    )
     {
         parent::__construct();
-        $this->migrationService = $migrationService;
     }
 
     public function execute(
@@ -29,24 +32,48 @@ class MigrationSkipCommand extends Command
         OutputInterface $output,
     ): int
     {
-        $skipped = false;
+        $this->logger->info('Starting migration skip');
+
+        $skippedCount = 0;
+        $skippedMigrations = [];
 
         foreach (MigrationPhase::cases() as $phase) {
             $executed = $this->migrationService->getExecutedVersions($phase);
             $prepared = $this->migrationService->getPreparedVersions();
+            $toSkip = array_values(array_diff($prepared, $executed));
 
-            foreach (array_diff($prepared, $executed) as $version) {
+            if (count($toSkip) > 0) {
+                $this->logger->info('Found migrations to skip', [
+                    'phase' => $phase->value,
+                    'count' => count($toSkip),
+                    'versions' => $toSkip,
+                ]);
+            }
+
+            foreach ($toSkip as $version) {
                 $now = new DateTimeImmutable();
                 $run = new MigrationRun($version, $phase, $now, $now);
 
                 $this->migrationService->markMigrationExecuted($run);
-                $output->writeln("Migration {$version} phase {$phase->value} skipped.");
-                $skipped = true;
+
+                $this->logger->info('Migration skipped', [
+                    'version' => $version,
+                    'phase' => $phase->value,
+                    'markedAt' => $now->format('Y-m-d H:i:s.u'),
+                ]);
+
+                $skippedMigrations[] = ['version' => $version, 'phase' => $phase->value];
+                $skippedCount++;
             }
         }
 
-        if (!$skipped) {
-            $output->writeln('No migration skipped.');
+        if ($skippedCount === 0) {
+            $this->logger->notice('No migrations to skip');
+        } else {
+            $this->logger->info('Migration skip completed', [
+                'skippedCount' => $skippedCount,
+                'skippedMigrations' => $skippedMigrations,
+            ]);
         }
 
         return 0;
