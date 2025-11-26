@@ -16,7 +16,7 @@ interface MigrationAnalyzer
 {
 
     /**
-     * @param list<string|Statement> $statements
+     * @param list<string> $statements
      * @return list<Statement>
      */
     public function analyze(array $statements): array;
