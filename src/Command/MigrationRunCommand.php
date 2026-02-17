@@ -15,9 +15,11 @@ use function is_string;
 use function round;
 use function sprintf;
 
-#[AsCommand('migration:run', description: 'Run all not executed migrations with specified phase')]
+#[AsCommand(self::NAME, description: 'Run all not executed migrations with specified phase')]
 class MigrationRunCommand extends Command
 {
+
+    public const NAME = 'migration:run';
 
     public const ARGUMENT_PHASE = 'phase';
     public const PHASE_BOTH = 'both';

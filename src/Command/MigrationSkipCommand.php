@@ -12,9 +12,11 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use function array_diff;
 
-#[AsCommand('migration:skip', description: 'Mark all not executed migrations as executed in both phases')]
+#[AsCommand(self::NAME, description: 'Mark all not executed migrations as executed in both phases')]
 class MigrationSkipCommand extends Command
 {
+
+    public const NAME = 'migration:skip';
 
     private MigrationService $migrationService;
 

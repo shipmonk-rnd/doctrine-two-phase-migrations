@@ -8,9 +8,11 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand('migration:init', description: 'Create migration table in database')]
+#[AsCommand(self::NAME, description: 'Create migration table in database')]
 class MigrationInitCommand extends Command
 {
+
+    public const NAME = 'migration:init';
 
     private MigrationService $migrationService;
 
