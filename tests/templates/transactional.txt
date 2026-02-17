@@ -7,7 +7,7 @@ use ShipMonk\Doctrine\Migration\Migration;
 use ShipMonk\Doctrine\Migration\TransactionalMigration;
 use ShipMonk\Doctrine\Migration\MigrationExecutor;
 
-class Migration%version% implements Migration, TransactionalMigration
+class %className% implements Migration, TransactionalMigration
 {
 
     public function before(MigrationExecutor $executor): void

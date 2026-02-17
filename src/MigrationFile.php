@@ -2,30 +2,15 @@
 
 namespace ShipMonk\Doctrine\Migration;
 
-class MigrationFile
+readonly class MigrationFile
 {
 
-    private string $filePath;
-
-    private string $version;
-
     public function __construct(
-        string $filePath,
-        string $version,
+        public string $filePath,
+        public string $version,
+        public string $content,
     )
     {
-        $this->filePath = $filePath;
-        $this->version = $version;
-    }
-
-    public function getFilePath(): string
-    {
-        return $this->filePath;
-    }
-
-    public function getVersion(): string
-    {
-        return $this->version;
     }
 
 }

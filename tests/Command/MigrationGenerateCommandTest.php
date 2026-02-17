@@ -27,7 +27,7 @@ class MigrationGenerateCommandTest extends TestCase
         $migrationService->expects(self::once())
             ->method('generateMigrationFile')
             ->with([$diffSql])
-            ->willReturn(new MigrationFile('fakepath', 'fakeversion'));
+            ->willReturn(new MigrationFile('fakepath', 'fakeversion', 'fakecontent'));
 
         $output = new BufferedOutput();
         $command = new MigrationGenerateCommand($migrationService);

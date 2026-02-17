@@ -6,7 +6,7 @@ class MigrationDefaultAnalyzer implements MigrationAnalyzer
 {
 
     /**
-     * @param list<string|Statement> $statements
+     * @param list<string> $statements
      * @return list<Statement>
      */
     public function analyze(array $statements): array
@@ -14,11 +14,7 @@ class MigrationDefaultAnalyzer implements MigrationAnalyzer
         $result = [];
 
         foreach ($statements as $statement) {
-            if ($statement instanceof Statement) {
-                $result[] = $statement;
-            } else {
-                $result[] = new Statement($statement, MigrationPhase::BEFORE);
-            }
+            $result[] = new Statement($statement, MigrationPhase::BEFORE);
         }
 
         return $result;
