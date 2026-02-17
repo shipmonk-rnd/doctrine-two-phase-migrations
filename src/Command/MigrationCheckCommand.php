@@ -13,9 +13,11 @@ use function count;
 use function implode;
 use const PHP_EOL;
 
-#[AsCommand('migration:check', description: 'Check if entities are in sync with database and if migrations were executed')]
+#[AsCommand(self::NAME, description: 'Check if entities are in sync with database and if migrations were executed')]
 class MigrationCheckCommand extends Command
 {
+
+    public const NAME = 'migration:check';
 
     private const EXIT_ENTITIES_NOT_SYNCED = 4;
     private const EXIT_UNKNOWN_MIGRATION = 2;

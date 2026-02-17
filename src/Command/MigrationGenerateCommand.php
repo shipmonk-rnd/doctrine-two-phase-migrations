@@ -9,9 +9,11 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use function count;
 
-#[AsCommand('migration:generate', description: 'Generate migration class')]
+#[AsCommand(self::NAME, description: 'Generate migration class')]
 class MigrationGenerateCommand extends Command
 {
+
+    public const NAME = 'migration:generate';
 
     private MigrationService $migrationService;
 
