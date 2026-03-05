@@ -6,6 +6,9 @@ use ShipMonk\Doctrine\Migration\Migration;
 use ShipMonk\Doctrine\Migration\MigrationPhase;
 use Throwable;
 
+/**
+ * @api
+ */
 class MigrationExecutionFailedEvent
 {
 

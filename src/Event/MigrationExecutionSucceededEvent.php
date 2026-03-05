@@ -5,6 +5,9 @@ namespace ShipMonk\Doctrine\Migration\Event;
 use ShipMonk\Doctrine\Migration\Migration;
 use ShipMonk\Doctrine\Migration\MigrationPhase;
 
+/**
+ * @api
+ */
 class MigrationExecutionSucceededEvent
 {
 
