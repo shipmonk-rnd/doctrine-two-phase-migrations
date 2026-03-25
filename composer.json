@@ -24,7 +24,15 @@
         "shipmonk/composer-dependency-analyser": "^1.8.3",
         "shipmonk/dead-code-detector": "^0.15.0",
         "shipmonk/phpstan-rules": "^4.1.2",
+        "symfony/config": "^8.0",
+        "symfony/dependency-injection": "^8.0",
+        "symfony/http-kernel": "^8.0",
         "symfony/var-exporter": "^6.4 || ^7.4"
+    },
+    "suggest": {
+        "symfony/config": "Required for Symfony Bundle integration",
+        "symfony/dependency-injection": "Required for Symfony Bundle integration",
+        "symfony/http-kernel": "Required for Symfony Bundle integration"
     },
     "autoload": {
         "psr-4": {

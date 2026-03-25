@@ -17,7 +17,36 @@ You can see [Czech talk about this library on YouTube](https://youtu.be/7OVO8itX
 composer require shipmonk/doctrine-two-phase-migrations
 ```
 
-### Configuration in symfony application:
+### Configuration in Symfony application:
+
+Register the bundle in `config/bundles.php`:
+```php
+return [
+    // ...
+    ShipMonk\Doctrine\Migration\Bridge\Symfony\ShipMonkTwoPhaseMigrationsBundle::class => ['all' => true],
+];
+```
+
+Then configure it in `config/packages/shipmonk_two_phase_migrations.yaml`:
+```yaml
+shipmonk_two_phase_migrations:
+    migrations_dir: '%kernel.project_dir%/migrations'
+
+    # optional parameters:
+    # migration_table_name: 'doctrine_migration'
+    # migration_class_namespace: 'YourCompany\Migrations'
+    # migration_class_prefix: 'Migration'
+    # excluded_tables: ['my_tmp_table']
+    # template_file_path: '%kernel.project_dir%/migrations/my-template.txt'
+    # template_indent: "\t\t"
+```
+
+The bundle requires `symfony/http-kernel` ^6.4+.
+All commands and services are registered automatically, and `Doctrine\ORM\EntityManagerInterface` is autowired.
+If you register a custom `MigrationExecutor`, `MigrationAnalyzer`, or `MigrationVersionProvider` service, it will be picked up automatically.
+
+<details>
+<summary>Manual service registration (without the bundle)</summary>
 
 If your `Doctrine\ORM\EntityManagerInterface` is autowired, just register few services in your DIC and tag the commands:
 ```yml
@@ -44,6 +73,7 @@ services:
         $templateFilePath: "%kernel.project_dir%/migrations/my-template.txt" # customizable according to your coding style
         $templateIndent: "\t\t" # defaults to spaces
 ```
+</details>
 
 ### Commands:
 
