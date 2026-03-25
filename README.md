@@ -23,13 +23,13 @@ Register the bundle in `config/bundles.php`:
 ```php
 return [
     // ...
-    ShipMonk\Doctrine\Migration\Bridge\Symfony\ShipMonkTwoPhaseMigrationsBundle::class => ['all' => true],
+    ShipMonk\Doctrine\Migration\Bridge\Symfony\TwoPhaseMigrationsBundle::class => ['all' => true],
 ];
 ```
 
-Then configure it in `config/packages/shipmonk_two_phase_migrations.yaml`:
+Then configure it in `config/packages/two_phase_migrations.yaml`:
 ```yaml
-shipmonk_two_phase_migrations:
+two_phase_migrations:
     migrations_dir: '%kernel.project_dir%/migrations'
 
     # optional parameters:

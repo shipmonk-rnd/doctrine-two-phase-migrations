@@ -23,7 +23,7 @@ use function dirname;
 use function is_dir;
 use function mkdir;
 
-class ShipMonkTwoPhaseMigrationsBundleTest extends TestCase
+class TwoPhaseMigrationsBundleTest extends TestCase
 {
 
     public function testConfigurationDefaults(): void
@@ -75,7 +75,7 @@ class ShipMonkTwoPhaseMigrationsBundleTest extends TestCase
             mkdir($migrationsDir, 0777, true);
         }
 
-        $bundle = new ShipMonkTwoPhaseMigrationsBundle();
+        $bundle = new TwoPhaseMigrationsBundle();
         $containerBuilder = new ContainerBuilder(new ParameterBag());
 
         $config = $this->processConfiguration([
@@ -119,7 +119,7 @@ class ShipMonkTwoPhaseMigrationsBundleTest extends TestCase
      */
     private function processConfiguration(array $config): array
     {
-        $bundle = new ShipMonkTwoPhaseMigrationsBundle();
+        $bundle = new TwoPhaseMigrationsBundle();
         $extension = $bundle->getContainerExtension();
         self::assertNotNull($extension);
         self::assertInstanceOf(ConfigurationExtensionInterface::class, $extension);

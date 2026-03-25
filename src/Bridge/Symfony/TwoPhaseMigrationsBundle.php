@@ -17,14 +17,14 @@ use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
 use function class_exists;
 use function dirname;
 
-class ShipMonkTwoPhaseMigrationsBundle extends AbstractBundle
+class TwoPhaseMigrationsBundle extends AbstractBundle
 {
 
     public function __construct()
     {
         if (!class_exists(AbstractBundle::class)) {
             throw new LogicException(
-                'Using ShipMonkTwoPhaseMigrationsBundle requires "symfony/http-kernel" ^6.4. Install it via: composer require symfony/http-kernel',
+                'Using TwoPhaseMigrationsBundle requires "symfony/http-kernel" ^6.4. Install it via: composer require symfony/http-kernel',
             );
         }
     }
