@@ -2,7 +2,6 @@
 
 namespace ShipMonk\Doctrine\Migration\Bridge\Symfony;
 
-use LogicException;
 use ShipMonk\Doctrine\Migration\Command\MigrationCheckCommand;
 use ShipMonk\Doctrine\Migration\Command\MigrationGenerateCommand;
 use ShipMonk\Doctrine\Migration\Command\MigrationInitCommand;
@@ -14,20 +13,10 @@ use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
-use function class_exists;
 use function dirname;
 
 class TwoPhaseMigrationsBundle extends AbstractBundle
 {
-
-    public function __construct()
-    {
-        if (!class_exists(AbstractBundle::class)) {
-            throw new LogicException(
-                'Using TwoPhaseMigrationsBundle requires "symfony/http-kernel" ^6.4. Install it via: composer require symfony/http-kernel',
-            );
-        }
-    }
 
     public function configure(DefinitionConfigurator $definition): void
     {
@@ -71,7 +60,7 @@ class TwoPhaseMigrationsBundle extends AbstractBundle
                 '$migrationTableName' => $config['migration_table_name'],
                 '$migrationClassNamespace' => $config['migration_class_namespace'],
                 '$migrationClassPrefix' => $config['migration_class_prefix'],
-                '$excludedTables' => $config['excluded_tables'] !== [] ? $config['excluded_tables'] : null,
+                '$excludedTables' => $config['excluded_tables'],
                 '$templateFilePath' => $config['template_file_path'],
                 '$templateIndent' => $config['template_indent'],
             ]);
