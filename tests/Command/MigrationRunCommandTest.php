@@ -4,14 +4,12 @@ namespace ShipMonk\Doctrine\Migration\Command;
 
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 use ShipMonk\Doctrine\Migration\MigrationPhase;
 use ShipMonk\Doctrine\Migration\MigrationRun;
 use ShipMonk\Doctrine\Migration\MigrationService;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Tester\CommandTester;
-use function array_column;
 
 class MigrationRunCommandTest extends TestCase
 {
@@ -32,25 +30,16 @@ class MigrationRunCommandTest extends TestCase
             ->with('fakeversion', MigrationPhase::AFTER)
             ->willReturn(new MigrationRun('fakeversion', MigrationPhase::AFTER, new DateTimeImmutable('today 00:00:00'), new DateTimeImmutable('today 00:00:01')));
 
-        $logger = $this->createMock(LoggerInterface::class);
-
+        $logger = new TestLogger();
         $command = new MigrationRunCommand($migrationService, $logger);
-
-        // Test BEFORE phase - no migration executed
-        $beforeLogCalls = [];
-        $logger->method('info')->willReturnCallback(static function (string $message, array $context = []) use (&$beforeLogCalls): void {
-            $beforeLogCalls[] = ['level' => 'info', 'message' => $message, 'context' => $context];
-        });
-        $logger->method('notice')->willReturnCallback(static function (string $message, array $context = []) use (&$beforeLogCalls): void {
-            $beforeLogCalls[] = ['level' => 'notice', 'message' => $message, 'context' => $context];
-        });
 
         $exitCode = $this->runPhase($command, MigrationPhase::BEFORE->value);
         self::assertSame(0, $exitCode);
+        self::assertTrue($logger->hasMessage('No migrations to execute (phase {phaseArgument})'));
 
-        // Test AFTER phase - migration executed
         $exitCode = $this->runPhase($command, MigrationPhase::AFTER->value);
         self::assertSame(0, $exitCode);
+        self::assertTrue($logger->hasMessage('Migration {version} phase {phase} executed successfully, {durationSeconds} s elapsed'));
     }
 
     public function testRunBoth(): void
@@ -79,33 +68,24 @@ class MigrationRunCommandTest extends TestCase
                 return $this->createMock(MigrationRun::class);
             });
 
-        $logger = $this->createMock(LoggerInterface::class);
-
-        $logCalls = [];
-        $logger->method('info')->willReturnCallback(static function (string $message, array $context = []) use (&$logCalls): void {
-            $logCalls[] = ['level' => 'info', 'message' => $message, 'context' => $context];
-        });
-
+        $logger = new TestLogger();
         $command = new MigrationRunCommand($migrationService, $logger);
         $exitCode = $this->runPhase($command, MigrationRunCommand::PHASE_BOTH);
 
         self::assertSame(0, $exitCode);
 
-        // Verify logging calls
-        $logMessages = array_column($logCalls, 'message');
-        self::assertContains('Starting migration execution (phase {phaseArgument})', $logMessages);
-        self::assertContains('{count} pending migrations found', $logMessages);
-        self::assertContains('Executing migration {version} phase {phase}', $logMessages);
-        self::assertContains('Migration {version} phase {phase} executed successfully, {durationSeconds} s elapsed', $logMessages);
-        self::assertContains('Migration execution completed (phase {phaseArgument})', $logMessages);
+        self::assertTrue($logger->hasMessage('Starting migration execution (phase {phaseArgument})'));
+        self::assertTrue($logger->hasMessage('{count} pending migrations found'));
+        self::assertTrue($logger->hasMessage('Executing migration {version} phase {phase}'));
+        self::assertTrue($logger->hasMessage('Migration {version} phase {phase} executed successfully, {durationSeconds} s elapsed'));
+        self::assertTrue($logger->hasMessage('Migration execution completed (phase {phaseArgument})'));
     }
 
     public function testFailureNoArgs(): void
     {
         self::expectExceptionMessage('Not enough arguments (missing: "phase").');
 
-        $logger = $this->createMock(LoggerInterface::class);
-        $tester = new CommandTester(new MigrationRunCommand($this->createMock(MigrationService::class), $logger));
+        $tester = new CommandTester(new MigrationRunCommand($this->createMock(MigrationService::class)));
         $tester->execute([]);
     }
 

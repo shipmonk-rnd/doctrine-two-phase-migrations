@@ -3,12 +3,10 @@
 namespace ShipMonk\Doctrine\Migration\Command;
 
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 use ShipMonk\Doctrine\Migration\MigrationConfig;
 use ShipMonk\Doctrine\Migration\MigrationService;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
-use function array_column;
 
 class MigrationInitCommandTest extends TestCase
 {
@@ -24,12 +22,7 @@ class MigrationInitCommandTest extends TestCase
             ->willReturn(true);
         $migrationService->method('getConfig')->willReturn($config);
 
-        $logger = $this->createMock(LoggerInterface::class);
-
-        $logCalls = [];
-        $logger->method('info')->willReturnCallback(static function (string $message, array $context = []) use (&$logCalls): void {
-            $logCalls[] = ['level' => 'info', 'message' => $message, 'context' => $context];
-        });
+        $logger = new TestLogger();
 
         $output = new BufferedOutput();
         $command = new MigrationInitCommand($migrationService, $logger);
@@ -37,10 +30,8 @@ class MigrationInitCommandTest extends TestCase
 
         self::assertSame(0, $exitCode);
 
-        // Verify logging calls
-        $logMessages = array_column($logCalls, 'message');
-        self::assertContains('Initializing migration table {tableName}', $logMessages);
-        self::assertContains('Migration table {tableName} created successfully', $logMessages);
+        self::assertTrue($logger->hasMessage('Initializing migration table {tableName}'));
+        self::assertTrue($logger->hasMessage('Migration table {tableName} created successfully'));
     }
 
     public function testInitAlreadyExists(): void
@@ -54,15 +45,7 @@ class MigrationInitCommandTest extends TestCase
             ->willReturn(false);
         $migrationService->method('getConfig')->willReturn($config);
 
-        $logger = $this->createMock(LoggerInterface::class);
-
-        $logCalls = [];
-        $logger->method('info')->willReturnCallback(static function (string $message, array $context = []) use (&$logCalls): void {
-            $logCalls[] = ['level' => 'info', 'message' => $message, 'context' => $context];
-        });
-        $logger->method('notice')->willReturnCallback(static function (string $message, array $context = []) use (&$logCalls): void {
-            $logCalls[] = ['level' => 'notice', 'message' => $message, 'context' => $context];
-        });
+        $logger = new TestLogger();
 
         $output = new BufferedOutput();
         $command = new MigrationInitCommand($migrationService, $logger);
@@ -70,10 +53,8 @@ class MigrationInitCommandTest extends TestCase
 
         self::assertSame(0, $exitCode);
 
-        // Verify logging calls
-        $logMessages = array_column($logCalls, 'message');
-        self::assertContains('Initializing migration table {tableName}', $logMessages);
-        self::assertContains('Migration table {tableName} already exists', $logMessages);
+        self::assertTrue($logger->hasMessage('Initializing migration table {tableName}'));
+        self::assertTrue($logger->hasMessage('Migration table {tableName} already exists'));
     }
 
 }

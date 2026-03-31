@@ -3,11 +3,9 @@
 namespace ShipMonk\Doctrine\Migration\Command;
 
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 use ShipMonk\Doctrine\Migration\MigrationService;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
-use function array_column;
 
 class MigrationSkipCommandTest extends TestCase
 {
@@ -26,13 +24,7 @@ class MigrationSkipCommandTest extends TestCase
         $migrationService->expects(self::once())
             ->method('markMigrationExecuted');
 
-        $logger = $this->createMock(LoggerInterface::class);
-
-        /** @var list<array{level: string, message: string, context: array<string, mixed>}> $logCalls */
-        $logCalls = [];
-        $logger->method('info')->willReturnCallback(static function (string $message, array $context = []) use (&$logCalls): void {
-            $logCalls[] = ['level' => 'info', 'message' => $message, 'context' => $context];
-        });
+        $logger = new TestLogger();
 
         $output = new BufferedOutput();
         $command = new MigrationSkipCommand($migrationService, $logger);
@@ -40,23 +32,17 @@ class MigrationSkipCommandTest extends TestCase
 
         self::assertSame(0, $exitCode);
 
-        // Verify logging calls
-        $logMessages = array_column($logCalls, 'message');
-        self::assertContains('Starting migration skip', $logMessages);
-        self::assertContains('Found {count} migrations to skip in phase {phase}', $logMessages);
-        self::assertContains('Migration {version} phase {phase} skipped', $logMessages);
-        self::assertContains('Migration skip completed, {skippedCount} skipped', $logMessages);
+        self::assertTrue($logger->hasMessage('Starting migration skip'));
+        self::assertTrue($logger->hasMessage('Found {count} migrations to skip in phase {phase}'));
+        self::assertTrue($logger->hasMessage('Migration {version} phase {phase} skipped'));
+        self::assertTrue($logger->hasMessage('Migration skip completed, {skippedCount} skipped'));
 
-        // Verify context of the skip
-        foreach ($logCalls as $logCall) {
-            if ($logCall['message'] === 'Migration {version} phase {phase} skipped') {
-                self::assertArrayHasKey('version', $logCall['context']);
-                self::assertArrayHasKey('phase', $logCall['context']);
-                self::assertSame('fakeversion', $logCall['context']['version']);
-                self::assertSame('after', $logCall['context']['phase']);
-                break;
-            }
-        }
+        $context = $logger->getContextFor('Migration {version} phase {phase} skipped');
+        self::assertIsArray($context);
+        self::assertArrayHasKey('version', $context);
+        self::assertArrayHasKey('phase', $context);
+        self::assertSame('fakeversion', $context['version']);
+        self::assertSame('after', $context['phase']);
     }
 
     public function testNoMigrationsToSkip(): void
@@ -73,15 +59,7 @@ class MigrationSkipCommandTest extends TestCase
         $migrationService->expects(self::never())
             ->method('markMigrationExecuted');
 
-        $logger = $this->createMock(LoggerInterface::class);
-
-        $logCalls = [];
-        $logger->method('info')->willReturnCallback(static function (string $message, array $context = []) use (&$logCalls): void {
-            $logCalls[] = ['level' => 'info', 'message' => $message, 'context' => $context];
-        });
-        $logger->method('notice')->willReturnCallback(static function (string $message, array $context = []) use (&$logCalls): void {
-            $logCalls[] = ['level' => 'notice', 'message' => $message, 'context' => $context];
-        });
+        $logger = new TestLogger();
 
         $output = new BufferedOutput();
         $command = new MigrationSkipCommand($migrationService, $logger);
@@ -89,10 +67,8 @@ class MigrationSkipCommandTest extends TestCase
 
         self::assertSame(0, $exitCode);
 
-        // Verify logging calls
-        $logMessages = array_column($logCalls, 'message');
-        self::assertContains('Starting migration skip', $logMessages);
-        self::assertContains('No migrations to skip', $logMessages);
+        self::assertTrue($logger->hasMessage('Starting migration skip'));
+        self::assertTrue($logger->hasMessage('No migrations to skip'));
     }
 
 }

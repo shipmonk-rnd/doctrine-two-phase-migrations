@@ -3,12 +3,10 @@
 namespace ShipMonk\Doctrine\Migration\Command;
 
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 use ShipMonk\Doctrine\Migration\MigrationConfig;
 use ShipMonk\Doctrine\Migration\MigrationService;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
-use function array_column;
 
 class MigrationCheckCommandTest extends TestCase
 {
@@ -35,18 +33,7 @@ class MigrationCheckCommandTest extends TestCase
 
         $migrationService->method('getConfig')->willReturn($config);
 
-        $logger = $this->createMock(LoggerInterface::class);
-
-        $logCalls = [];
-        $logger->method('info')->willReturnCallback(static function (string $message, array $context = []) use (&$logCalls): void {
-            $logCalls[] = ['level' => 'info', 'message' => $message, 'context' => $context];
-        });
-        $logger->method('warning')->willReturnCallback(static function (string $message, array $context = []) use (&$logCalls): void {
-            $logCalls[] = ['level' => 'warning', 'message' => $message, 'context' => $context];
-        });
-        $logger->method('error')->willReturnCallback(static function (string $message, array $context = []) use (&$logCalls): void {
-            $logCalls[] = ['level' => 'error', 'message' => $message, 'context' => $context];
-        });
+        $logger = new TestLogger();
 
         $output = new BufferedOutput();
         $command = new MigrationCheckCommand($migrationService, $logger);
@@ -54,13 +41,11 @@ class MigrationCheckCommandTest extends TestCase
 
         self::assertSame(5, $exitCode); // EXIT_ENTITIES_NOT_SYNCED | EXIT_AWAITING_MIGRATION
 
-        // Verify logging calls
-        $logMessages = array_column($logCalls, 'message');
-        self::assertContains('Starting migration check', $logMessages);
-        self::assertContains('Phase {phase} fully executed, no awaiting migrations', $logMessages);
-        self::assertContains('Phase {phase} not fully executed, awaiting migrations: {awaitingMigrationsList}', $logMessages);
-        self::assertContains('Database is not synced with entities, {missingUpdatesCount} missing updates', $logMessages);
-        self::assertContains('Migration check completed', $logMessages);
+        self::assertTrue($logger->hasMessage('Starting migration check'));
+        self::assertTrue($logger->hasMessage('Phase {phase} fully executed, no awaiting migrations'));
+        self::assertTrue($logger->hasMessage('Phase {phase} not fully executed, awaiting migrations: {awaitingMigrationsList}'));
+        self::assertTrue($logger->hasMessage('Database is not synced with entities, {missingUpdatesCount} missing updates'));
+        self::assertTrue($logger->hasMessage('Migration check completed'));
     }
 
 }

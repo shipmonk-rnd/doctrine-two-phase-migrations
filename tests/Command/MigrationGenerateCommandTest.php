@@ -3,12 +3,10 @@
 namespace ShipMonk\Doctrine\Migration\Command;
 
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 use ShipMonk\Doctrine\Migration\MigrationFile;
 use ShipMonk\Doctrine\Migration\MigrationService;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
-use function array_column;
 
 class MigrationGenerateCommandTest extends TestCase
 {
@@ -27,13 +25,7 @@ class MigrationGenerateCommandTest extends TestCase
             ->with([$diffSql])
             ->willReturn(new MigrationFile('fakepath', 'fakeversion', 'fakecontent'));
 
-        $logger = $this->createMock(LoggerInterface::class);
-
-        /** @var list<array{level: string, message: string, context: array<string, mixed>}> $logCalls */
-        $logCalls = [];
-        $logger->method('info')->willReturnCallback(static function (string $message, array $context = []) use (&$logCalls): void {
-            $logCalls[] = ['level' => 'info', 'message' => $message, 'context' => $context];
-        });
+        $logger = new TestLogger();
 
         $output = new BufferedOutput();
         $command = new MigrationGenerateCommand($migrationService, $logger);
@@ -41,22 +33,16 @@ class MigrationGenerateCommandTest extends TestCase
 
         self::assertSame(0, $exitCode);
 
-        // Verify logging calls
-        $logMessages = array_column($logCalls, 'message');
-        self::assertContains('Starting migration generation', $logMessages);
-        self::assertContains('{sqlCount} schema changes detected', $logMessages);
-        self::assertContains('Migration version {version} generated successfully', $logMessages);
+        self::assertTrue($logger->hasMessage('Starting migration generation'));
+        self::assertTrue($logger->hasMessage('{sqlCount} schema changes detected'));
+        self::assertTrue($logger->hasMessage('Migration version {version} generated successfully'));
 
-        // Verify context includes version and file path
-        foreach ($logCalls as $logCall) {
-            if ($logCall['message'] === 'Migration version {version} generated successfully') {
-                self::assertArrayHasKey('version', $logCall['context']);
-                self::assertArrayHasKey('filePath', $logCall['context']);
-                self::assertSame('fakeversion', $logCall['context']['version']);
-                self::assertSame('fakepath', $logCall['context']['filePath']);
-                break;
-            }
-        }
+        $context = $logger->getContextFor('Migration version {version} generated successfully');
+        self::assertIsArray($context);
+        self::assertArrayHasKey('version', $context);
+        self::assertArrayHasKey('filePath', $context);
+        self::assertSame('fakeversion', $context['version']);
+        self::assertSame('fakepath', $context['filePath']);
     }
 
     public function testGenerateEmpty(): void
@@ -71,15 +57,7 @@ class MigrationGenerateCommandTest extends TestCase
             ->with([])
             ->willReturn(new MigrationFile('fakepath', 'fakeversion', ''));
 
-        $logger = $this->createMock(LoggerInterface::class);
-
-        $logCalls = [];
-        $logger->method('info')->willReturnCallback(static function (string $message, array $context = []) use (&$logCalls): void {
-            $logCalls[] = ['level' => 'info', 'message' => $message, 'context' => $context];
-        });
-        $logger->method('notice')->willReturnCallback(static function (string $message, array $context = []) use (&$logCalls): void {
-            $logCalls[] = ['level' => 'notice', 'message' => $message, 'context' => $context];
-        });
+        $logger = new TestLogger();
 
         $output = new BufferedOutput();
         $command = new MigrationGenerateCommand($migrationService, $logger);
@@ -87,10 +65,8 @@ class MigrationGenerateCommandTest extends TestCase
 
         self::assertSame(0, $exitCode);
 
-        // Verify logging calls
-        $logMessages = array_column($logCalls, 'message');
-        self::assertContains('No schema changes found, creating empty migration class', $logMessages);
-        self::assertContains('Migration version {version} generated successfully', $logMessages);
+        self::assertTrue($logger->hasMessage('No schema changes found, creating empty migration class'));
+        self::assertTrue($logger->hasMessage('Migration version {version} generated successfully'));
     }
 
 }
