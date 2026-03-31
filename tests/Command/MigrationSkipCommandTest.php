@@ -6,12 +6,11 @@ use PHPUnit\Framework\TestCase;
 use ShipMonk\Doctrine\Migration\MigrationService;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
-use const PHP_EOL;
 
 class MigrationSkipCommandTest extends TestCase
 {
 
-    public function testCheck(): void
+    public function testSkip(): void
     {
         $migrationService = $this->createMock(MigrationService::class);
         $migrationService->expects(self::exactly(2))
@@ -22,11 +21,54 @@ class MigrationSkipCommandTest extends TestCase
             ->method('getPreparedVersions')
             ->willReturn(['fakeversion']);
 
-        $output = new BufferedOutput();
-        $command = new MigrationSkipCommand($migrationService);
-        $command->run(new ArrayInput([]), $output);
+        $migrationService->expects(self::once())
+            ->method('markMigrationExecuted');
 
-        self::assertSame('Migration fakeversion phase after skipped.' . PHP_EOL, $output->fetch());
+        $logger = new TestLogger();
+
+        $output = new BufferedOutput();
+        $command = new MigrationSkipCommand($migrationService, $logger);
+        $exitCode = $command->run(new ArrayInput([]), $output);
+
+        self::assertSame(0, $exitCode);
+
+        self::assertTrue($logger->hasMessage('Starting migration skip'));
+        self::assertTrue($logger->hasMessage('Found {count} migrations to skip in phase {phase}'));
+        self::assertTrue($logger->hasMessage('Migration {version} phase {phase} skipped'));
+        self::assertTrue($logger->hasMessage('Migration skip completed, {skippedCount} skipped'));
+
+        $context = $logger->getContextFor('Migration {version} phase {phase} skipped');
+        self::assertIsArray($context);
+        self::assertArrayHasKey('version', $context);
+        self::assertArrayHasKey('phase', $context);
+        self::assertSame('fakeversion', $context['version']);
+        self::assertSame('after', $context['phase']);
+    }
+
+    public function testNoMigrationsToSkip(): void
+    {
+        $migrationService = $this->createMock(MigrationService::class);
+        $migrationService->expects(self::exactly(2))
+            ->method('getExecutedVersions')
+            ->willReturn(['fakeversion']);
+
+        $migrationService->expects(self::exactly(2))
+            ->method('getPreparedVersions')
+            ->willReturn(['fakeversion']);
+
+        $migrationService->expects(self::never())
+            ->method('markMigrationExecuted');
+
+        $logger = new TestLogger();
+
+        $output = new BufferedOutput();
+        $command = new MigrationSkipCommand($migrationService, $logger);
+        $exitCode = $command->run(new ArrayInput([]), $output);
+
+        self::assertSame(0, $exitCode);
+
+        self::assertTrue($logger->hasMessage('Starting migration skip'));
+        self::assertTrue($logger->hasMessage('No migrations to skip'));
     }
 
 }

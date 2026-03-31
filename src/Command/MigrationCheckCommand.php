@@ -2,6 +2,7 @@
 
 namespace ShipMonk\Doctrine\Migration\Command;
 
+use Psr\Log\LoggerInterface;
 use ShipMonk\Doctrine\Migration\MigrationPhase;
 use ShipMonk\Doctrine\Migration\MigrationService;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -9,29 +10,29 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use function array_diff;
+use function array_values;
 use function count;
 use function implode;
-use const PHP_EOL;
 
 #[AsCommand(self::NAME, description: 'Check if entities are in sync with database and if migrations were executed')]
 class MigrationCheckCommand extends Command
 {
 
+    use ConsoleLoggerFallbackTrait;
+
     public const NAME = 'migration:check';
 
-    private const EXIT_ENTITIES_NOT_SYNCED = 4;
-    private const EXIT_UNKNOWN_MIGRATION = 2;
-    private const EXIT_AWAITING_MIGRATION = 1;
-    private const EXIT_OK = 0;
-
-    private MigrationService $migrationService;
+    public const EXIT_ENTITIES_NOT_SYNCED = 4;
+    public const EXIT_UNKNOWN_MIGRATION = 2;
+    public const EXIT_AWAITING_MIGRATION = 1;
+    public const EXIT_OK = 0;
 
     public function __construct(
-        MigrationService $migrationService,
+        private readonly MigrationService $migrationService,
+        private readonly ?LoggerInterface $logger = null,
     )
     {
         parent::__construct();
-        $this->migrationService = $migrationService;
     }
 
     public function execute(
@@ -39,27 +40,40 @@ class MigrationCheckCommand extends Command
         OutputInterface $output,
     ): int
     {
+        $logger = $this->createLogger($output);
+
+        $logger->info('Starting migration check');
+
         $exitCode = self::EXIT_OK;
-        $exitCode |= $this->checkMigrationsExecuted($output);
-        $exitCode |= $this->checkEntitiesSyncedWithDatabase($output);
+        $exitCode |= $this->checkMigrationsExecuted($logger);
+        $exitCode |= $this->checkEntitiesSyncedWithDatabase($logger);
+
+        $logger->info('Migration check completed', [
+            'exitCode' => $exitCode,
+            'success' => $exitCode === self::EXIT_OK,
+        ]);
 
         return $exitCode;
     }
 
-    private function checkEntitiesSyncedWithDatabase(OutputInterface $output): int
+    private function checkEntitiesSyncedWithDatabase(LoggerInterface $logger): int
     {
         $updates = $this->migrationService->generateDiffSqls();
+        $updateCount = count($updates);
 
-        if (count($updates) !== 0) {
-            $output->writeln('<comment>Database is not synced with entities, missing updates:' . PHP_EOL . ' > ' . implode(PHP_EOL . ' > ', $updates) . '</comment>');
+        if ($updateCount !== 0) {
+            $logger->warning('Database is not synced with entities, {missingUpdatesCount} missing updates', [
+                'missingUpdatesCount' => $updateCount,
+                'missingUpdates' => $updates,
+            ]);
             return self::EXIT_ENTITIES_NOT_SYNCED;
         }
 
-        $output->writeln('<info>Database is synced with entities, no migration needed.</info>');
+        $logger->info('Database is synced with entities, no migration needed');
         return self::EXIT_OK;
     }
 
-    private function checkMigrationsExecuted(OutputInterface $output): int
+    private function checkMigrationsExecuted(LoggerInterface $logger): int
     {
         $exitCode = self::EXIT_OK;
         $migrationsDir = $this->migrationService->getConfig()->getMigrationsDirectory();
@@ -68,21 +82,32 @@ class MigrationCheckCommand extends Command
             $executed = $this->migrationService->getExecutedVersions($phase);
             $prepared = $this->migrationService->getPreparedVersions();
 
-            $toBeExecuted = array_diff($prepared, $executed);
-            $executedNotPresent = array_diff($executed, $prepared);
+            $toBeExecuted = array_values(array_diff($prepared, $executed));
+            $executedNotPresent = array_values(array_diff($executed, $prepared));
 
             if (count($executedNotPresent) > 0) {
                 $exitCode |= self::EXIT_UNKNOWN_MIGRATION;
-                $output->writeln("<error>Phase $phase->value has executed migrations not present in {$migrationsDir}: " . implode(', ', $executedNotPresent) . '</error>');
+                $logger->error('Phase {phase} has executed migrations not present in {migrationsDirectory}: {unknownMigrationsList}', [
+                    'phase' => $phase->value,
+                    'migrationsDirectory' => $migrationsDir,
+                    'unknownMigrations' => $executedNotPresent,
+                    'unknownMigrationsList' => implode(', ', $executedNotPresent),
+                ]);
             }
 
             if (count($toBeExecuted) > 0) {
                 $exitCode |= self::EXIT_AWAITING_MIGRATION;
-                $output->writeln("<comment>Phase $phase->value not fully executed, awaiting migrations:" . PHP_EOL . ' > ' . implode(PHP_EOL . ' > ', $toBeExecuted) . '</comment>');
+                $logger->warning('Phase {phase} not fully executed, awaiting migrations: {awaitingMigrationsList}', [
+                    'phase' => $phase->value,
+                    'awaitingMigrations' => $toBeExecuted,
+                    'awaitingMigrationsList' => implode(', ', $toBeExecuted),
+                ]);
             }
 
             if (count($executedNotPresent) === 0 && count($toBeExecuted) === 0) {
-                $output->writeln("<info>Phase $phase->value fully executed, no awaiting migrations</info>");
+                $logger->info('Phase {phase} fully executed, no awaiting migrations', [
+                    'phase' => $phase->value,
+                ]);
             }
         }
 

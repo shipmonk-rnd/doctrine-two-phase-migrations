@@ -3,20 +3,20 @@
 namespace ShipMonk\Doctrine\Migration\Command;
 
 use PHPUnit\Framework\TestCase;
+use ShipMonk\Doctrine\Migration\MigrationConfig;
 use ShipMonk\Doctrine\Migration\MigrationService;
-use ShipMonk\Doctrine\Migration\WithEntityManagerTestCase;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
-use const PHP_EOL;
 
 class MigrationCheckCommandTest extends TestCase
 {
 
-    use WithEntityManagerTestCase;
-
     public function testCheck(): void
     {
         $diffSql = 'SELECT 1';
+
+        $config = $this->createMock(MigrationConfig::class);
+        $config->method('getMigrationsDirectory')->willReturn('/tmp/migrations');
 
         $migrationService = $this->createMock(MigrationService::class);
         $migrationService->expects(self::exactly(2))
@@ -31,18 +31,21 @@ class MigrationCheckCommandTest extends TestCase
             ->method('generateDiffSqls')
             ->willReturn([$diffSql]);
 
-        $output = new BufferedOutput();
-        $command = new MigrationCheckCommand($migrationService);
-        $command->run(new ArrayInput([]), $output);
+        $migrationService->method('getConfig')->willReturn($config);
 
-        self::assertSame(
-            'Phase before fully executed, no awaiting migrations' . PHP_EOL
-            . 'Phase after not fully executed, awaiting migrations:' . PHP_EOL
-            . ' > fakeversion' . PHP_EOL
-            . 'Database is not synced with entities, missing updates:' . PHP_EOL
-            . ' > ' . $diffSql . PHP_EOL,
-            $output->fetch(),
-        );
+        $logger = new TestLogger();
+
+        $output = new BufferedOutput();
+        $command = new MigrationCheckCommand($migrationService, $logger);
+        $exitCode = $command->run(new ArrayInput([]), $output);
+
+        self::assertSame(MigrationCheckCommand::EXIT_ENTITIES_NOT_SYNCED | MigrationCheckCommand::EXIT_AWAITING_MIGRATION, $exitCode);
+
+        self::assertTrue($logger->hasMessage('Starting migration check'));
+        self::assertTrue($logger->hasMessage('Phase {phase} fully executed, no awaiting migrations'));
+        self::assertTrue($logger->hasMessage('Phase {phase} not fully executed, awaiting migrations: {awaitingMigrationsList}'));
+        self::assertTrue($logger->hasMessage('Database is not synced with entities, {missingUpdatesCount} missing updates'));
+        self::assertTrue($logger->hasMessage('Migration check completed'));
     }
 
 }

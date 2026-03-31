@@ -10,7 +10,6 @@ use ShipMonk\Doctrine\Migration\MigrationService;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Tester\CommandTester;
-use const PHP_EOL;
 
 class MigrationRunCommandTest extends TestCase
 {
@@ -31,10 +30,16 @@ class MigrationRunCommandTest extends TestCase
             ->with('fakeversion', MigrationPhase::AFTER)
             ->willReturn(new MigrationRun('fakeversion', MigrationPhase::AFTER, new DateTimeImmutable('today 00:00:00'), new DateTimeImmutable('today 00:00:01')));
 
-        $command = new MigrationRunCommand($migrationService);
+        $logger = new TestLogger();
+        $command = new MigrationRunCommand($migrationService, $logger);
 
-        self::assertSame('No migration executed (phase before).' . PHP_EOL, $this->runPhase($command, MigrationPhase::BEFORE->value));
-        self::assertSame('Executing migration fakeversion phase after... done, 1.000 s elapsed.' . PHP_EOL, $this->runPhase($command, MigrationPhase::AFTER->value));
+        $exitCode = $this->runPhase($command, MigrationPhase::BEFORE->value);
+        self::assertSame(0, $exitCode);
+        self::assertTrue($logger->hasMessage('No migrations to execute (phase {phaseArgument})'));
+
+        $exitCode = $this->runPhase($command, MigrationPhase::AFTER->value);
+        self::assertSame(0, $exitCode);
+        self::assertTrue($logger->hasMessage('Migration {version} phase {phase} executed successfully, {durationSeconds} s elapsed'));
     }
 
     public function testRunBoth(): void
@@ -63,14 +68,17 @@ class MigrationRunCommandTest extends TestCase
                 return $this->createMock(MigrationRun::class);
             });
 
-        $command = new MigrationRunCommand($migrationService);
+        $logger = new TestLogger();
+        $command = new MigrationRunCommand($migrationService, $logger);
+        $exitCode = $this->runPhase($command, MigrationRunCommand::PHASE_BOTH);
 
-        $output = 'Executing migration version1 phase before... done, 0.000 s elapsed.' . PHP_EOL
-            . 'Executing migration version1 phase after... done, 0.000 s elapsed.' . PHP_EOL
-            . 'Executing migration version2 phase before... done, 0.000 s elapsed.' . PHP_EOL
-            . 'Executing migration version2 phase after... done, 0.000 s elapsed.' . PHP_EOL;
+        self::assertSame(0, $exitCode);
 
-        self::assertSame($output, $this->runPhase($command, MigrationRunCommand::PHASE_BOTH));
+        self::assertTrue($logger->hasMessage('Starting migration execution (phase {phaseArgument})'));
+        self::assertTrue($logger->hasMessage('{count} pending migrations found'));
+        self::assertTrue($logger->hasMessage('Executing migration {version} phase {phase}'));
+        self::assertTrue($logger->hasMessage('Migration {version} phase {phase} executed successfully, {durationSeconds} s elapsed'));
+        self::assertTrue($logger->hasMessage('Migration execution completed (phase {phaseArgument})'));
     }
 
     public function testFailureNoArgs(): void
@@ -84,13 +92,11 @@ class MigrationRunCommandTest extends TestCase
     private function runPhase(
         MigrationRunCommand $command,
         string $phase,
-    ): string
+    ): int
     {
         $input = new ArrayInput([MigrationRunCommand::ARGUMENT_PHASE => $phase], $command->getDefinition());
         $output = new BufferedOutput();
-        $command->run($input, $output);
-
-        return $output->fetch();
+        return $command->run($input, $output);
     }
 
 }
