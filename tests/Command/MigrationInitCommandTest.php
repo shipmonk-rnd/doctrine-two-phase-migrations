@@ -39,8 +39,8 @@ class MigrationInitCommandTest extends TestCase
 
         // Verify logging calls
         $logMessages = array_column($logCalls, 'message');
-        self::assertContains('Initializing migration table', $logMessages);
-        self::assertContains('Migration table created successfully', $logMessages);
+        self::assertContains('Initializing migration table {tableName}', $logMessages);
+        self::assertContains('Migration table {tableName} created successfully', $logMessages);
     }
 
     public function testInitAlreadyExists(): void
@@ -72,8 +72,8 @@ class MigrationInitCommandTest extends TestCase
 
         // Verify logging calls
         $logMessages = array_column($logCalls, 'message');
-        self::assertContains('Initializing migration table', $logMessages);
-        self::assertContains('Migration table already exists', $logMessages);
+        self::assertContains('Initializing migration table {tableName}', $logMessages);
+        self::assertContains('Migration table {tableName} already exists', $logMessages);
     }
 
 }

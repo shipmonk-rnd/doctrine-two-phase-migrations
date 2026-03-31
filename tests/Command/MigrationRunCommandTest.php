@@ -93,11 +93,11 @@ class MigrationRunCommandTest extends TestCase
 
         // Verify logging calls
         $logMessages = array_column($logCalls, 'message');
-        self::assertContains('Starting migration execution', $logMessages);
-        self::assertContains('Pending migrations found', $logMessages);
-        self::assertContains('Executing migration', $logMessages);
-        self::assertContains('Migration executed successfully', $logMessages);
-        self::assertContains('Migration execution completed', $logMessages);
+        self::assertContains('Starting migration execution (phase {phaseArgument})', $logMessages);
+        self::assertContains('{count} pending migrations found', $logMessages);
+        self::assertContains('Executing migration {version} phase {phase}', $logMessages);
+        self::assertContains('Migration {version} phase {phase} executed successfully, {durationSeconds} s elapsed', $logMessages);
+        self::assertContains('Migration execution completed (phase {phaseArgument})', $logMessages);
     }
 
     public function testFailureNoArgs(): void

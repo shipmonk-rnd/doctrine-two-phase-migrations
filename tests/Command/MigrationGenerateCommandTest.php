@@ -44,12 +44,12 @@ class MigrationGenerateCommandTest extends TestCase
         // Verify logging calls
         $logMessages = array_column($logCalls, 'message');
         self::assertContains('Starting migration generation', $logMessages);
-        self::assertContains('Schema changes detected', $logMessages);
-        self::assertContains('Migration generated successfully', $logMessages);
+        self::assertContains('{sqlCount} schema changes detected', $logMessages);
+        self::assertContains('Migration version {version} generated successfully', $logMessages);
 
         // Verify context includes version and file path
         foreach ($logCalls as $logCall) {
-            if ($logCall['message'] === 'Migration generated successfully') {
+            if ($logCall['message'] === 'Migration version {version} generated successfully') {
                 self::assertArrayHasKey('version', $logCall['context']);
                 self::assertArrayHasKey('filePath', $logCall['context']);
                 self::assertSame('fakeversion', $logCall['context']['version']);
@@ -90,7 +90,7 @@ class MigrationGenerateCommandTest extends TestCase
         // Verify logging calls
         $logMessages = array_column($logCalls, 'message');
         self::assertContains('No schema changes found, creating empty migration class', $logMessages);
-        self::assertContains('Migration generated successfully', $logMessages);
+        self::assertContains('Migration version {version} generated successfully', $logMessages);
     }
 
 }

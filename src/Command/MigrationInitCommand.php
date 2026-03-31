@@ -3,10 +3,12 @@
 namespace ShipMonk\Doctrine\Migration\Command;
 
 use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
 use ShipMonk\Doctrine\Migration\MigrationService;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(self::NAME, description: 'Create migration table in database')]
@@ -17,7 +19,7 @@ class MigrationInitCommand extends Command
 
     public function __construct(
         private readonly MigrationService $migrationService,
-        private readonly LoggerInterface $logger,
+        private readonly ?LoggerInterface $logger = null,
     )
     {
         parent::__construct();
@@ -28,20 +30,25 @@ class MigrationInitCommand extends Command
         OutputInterface $output,
     ): int
     {
+        $logger = $this->logger ?? new ConsoleLogger($output, [
+            LogLevel::NOTICE => OutputInterface::VERBOSITY_NORMAL,
+            LogLevel::INFO => OutputInterface::VERBOSITY_NORMAL,
+        ]);
+
         $tableName = $this->migrationService->getConfig()->getMigrationTableName();
 
-        $this->logger->info('Initializing migration table', [
+        $logger->info('Initializing migration table {tableName}', [
             'tableName' => $tableName,
         ]);
 
         $initialized = $this->migrationService->initializeMigrationTable();
 
         if ($initialized) {
-            $this->logger->info('Migration table created successfully', [
+            $logger->info('Migration table {tableName} created successfully', [
                 'tableName' => $tableName,
             ]);
         } else {
-            $this->logger->notice('Migration table already exists', [
+            $logger->notice('Migration table {tableName} already exists', [
                 'tableName' => $tableName,
             ]);
         }

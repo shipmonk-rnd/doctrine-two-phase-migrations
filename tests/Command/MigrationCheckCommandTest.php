@@ -57,9 +57,9 @@ class MigrationCheckCommandTest extends TestCase
         // Verify logging calls
         $logMessages = array_column($logCalls, 'message');
         self::assertContains('Starting migration check', $logMessages);
-        self::assertContains('Phase fully executed, no awaiting migrations', $logMessages);
-        self::assertContains('Phase not fully executed, migrations awaiting', $logMessages);
-        self::assertContains('Database is not synced with entities', $logMessages);
+        self::assertContains('Phase {phase} fully executed, no awaiting migrations', $logMessages);
+        self::assertContains('Phase {phase} not fully executed, awaiting migrations: {awaitingMigrationsList}', $logMessages);
+        self::assertContains('Database is not synced with entities, {missingUpdatesCount} missing updates', $logMessages);
         self::assertContains('Migration check completed', $logMessages);
     }
 

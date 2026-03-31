@@ -4,12 +4,14 @@ namespace ShipMonk\Doctrine\Migration\Command;
 
 use DateTimeImmutable;
 use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
 use ShipMonk\Doctrine\Migration\MigrationPhase;
 use ShipMonk\Doctrine\Migration\MigrationRun;
 use ShipMonk\Doctrine\Migration\MigrationService;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 use function array_diff;
 use function array_values;
@@ -23,7 +25,7 @@ class MigrationSkipCommand extends Command
 
     public function __construct(
         private readonly MigrationService $migrationService,
-        private readonly LoggerInterface $logger,
+        private readonly ?LoggerInterface $logger = null,
     )
     {
         parent::__construct();
@@ -34,7 +36,12 @@ class MigrationSkipCommand extends Command
         OutputInterface $output,
     ): int
     {
-        $this->logger->info('Starting migration skip');
+        $logger = $this->logger ?? new ConsoleLogger($output, [
+            LogLevel::NOTICE => OutputInterface::VERBOSITY_NORMAL,
+            LogLevel::INFO => OutputInterface::VERBOSITY_NORMAL,
+        ]);
+
+        $logger->info('Starting migration skip');
 
         $skippedCount = 0;
         $skippedMigrations = [];
@@ -45,7 +52,7 @@ class MigrationSkipCommand extends Command
             $toSkip = array_values(array_diff($prepared, $executed));
 
             if (count($toSkip) > 0) {
-                $this->logger->info('Found migrations to skip', [
+                $logger->info('Found {count} migrations to skip in phase {phase}', [
                     'phase' => $phase->value,
                     'count' => count($toSkip),
                     'versions' => $toSkip,
@@ -58,7 +65,7 @@ class MigrationSkipCommand extends Command
 
                 $this->migrationService->markMigrationExecuted($run);
 
-                $this->logger->info('Migration skipped', [
+                $logger->info('Migration {version} phase {phase} skipped', [
                     'version' => $version,
                     'phase' => $phase->value,
                     'markedAt' => $now->format('Y-m-d H:i:s.u'),
@@ -70,9 +77,9 @@ class MigrationSkipCommand extends Command
         }
 
         if ($skippedCount === 0) {
-            $this->logger->notice('No migrations to skip');
+            $logger->notice('No migrations to skip');
         } else {
-            $this->logger->info('Migration skip completed', [
+            $logger->info('Migration skip completed, {skippedCount} skipped', [
                 'skippedCount' => $skippedCount,
                 'skippedMigrations' => $skippedMigrations,
             ]);

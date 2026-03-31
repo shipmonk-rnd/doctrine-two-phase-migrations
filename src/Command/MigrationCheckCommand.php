@@ -3,15 +3,18 @@
 namespace ShipMonk\Doctrine\Migration\Command;
 
 use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
 use ShipMonk\Doctrine\Migration\MigrationPhase;
 use ShipMonk\Doctrine\Migration\MigrationService;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 use function array_diff;
 use function array_values;
 use function count;
+use function implode;
 
 #[AsCommand(self::NAME, description: 'Check if entities are in sync with database and if migrations were executed')]
 class MigrationCheckCommand extends Command
@@ -26,7 +29,7 @@ class MigrationCheckCommand extends Command
 
     public function __construct(
         private readonly MigrationService $migrationService,
-        private readonly LoggerInterface $logger,
+        private readonly ?LoggerInterface $logger = null,
     )
     {
         parent::__construct();
@@ -37,13 +40,15 @@ class MigrationCheckCommand extends Command
         OutputInterface $output,
     ): int
     {
-        $this->logger->info('Starting migration check');
+        $logger = $this->createLogger($output);
+
+        $logger->info('Starting migration check');
 
         $exitCode = self::EXIT_OK;
-        $exitCode |= $this->checkMigrationsExecuted();
-        $exitCode |= $this->checkEntitiesSyncedWithDatabase();
+        $exitCode |= $this->checkMigrationsExecuted($logger);
+        $exitCode |= $this->checkEntitiesSyncedWithDatabase($logger);
 
-        $this->logger->info('Migration check completed', [
+        $logger->info('Migration check completed', [
             'exitCode' => $exitCode,
             'success' => $exitCode === self::EXIT_OK,
         ]);
@@ -51,24 +56,24 @@ class MigrationCheckCommand extends Command
         return $exitCode;
     }
 
-    private function checkEntitiesSyncedWithDatabase(): int
+    private function checkEntitiesSyncedWithDatabase(LoggerInterface $logger): int
     {
         $updates = $this->migrationService->generateDiffSqls();
         $updateCount = count($updates);
 
         if ($updateCount !== 0) {
-            $this->logger->warning('Database is not synced with entities', [
+            $logger->warning('Database is not synced with entities, {missingUpdatesCount} missing updates', [
                 'missingUpdatesCount' => $updateCount,
                 'missingUpdates' => $updates,
             ]);
             return self::EXIT_ENTITIES_NOT_SYNCED;
         }
 
-        $this->logger->info('Database is synced with entities, no migration needed');
+        $logger->info('Database is synced with entities, no migration needed');
         return self::EXIT_OK;
     }
 
-    private function checkMigrationsExecuted(): int
+    private function checkMigrationsExecuted(LoggerInterface $logger): int
     {
         $exitCode = self::EXIT_OK;
         $migrationsDir = $this->migrationService->getConfig()->getMigrationsDirectory();
@@ -82,31 +87,39 @@ class MigrationCheckCommand extends Command
 
             if (count($executedNotPresent) > 0) {
                 $exitCode |= self::EXIT_UNKNOWN_MIGRATION;
-                $this->logger->error('Executed migrations not present in migrations directory', [
+                $logger->error('Phase {phase} has executed migrations not present in {migrationsDirectory}: {unknownMigrationsList}', [
                     'phase' => $phase->value,
                     'migrationsDirectory' => $migrationsDir,
                     'unknownMigrations' => $executedNotPresent,
-                    'unknownMigrationsCount' => count($executedNotPresent),
+                    'unknownMigrationsList' => implode(', ', $executedNotPresent),
                 ]);
             }
 
             if (count($toBeExecuted) > 0) {
                 $exitCode |= self::EXIT_AWAITING_MIGRATION;
-                $this->logger->warning('Phase not fully executed, migrations awaiting', [
+                $logger->warning('Phase {phase} not fully executed, awaiting migrations: {awaitingMigrationsList}', [
                     'phase' => $phase->value,
                     'awaitingMigrations' => $toBeExecuted,
-                    'awaitingMigrationsCount' => count($toBeExecuted),
+                    'awaitingMigrationsList' => implode(', ', $toBeExecuted),
                 ]);
             }
 
             if (count($executedNotPresent) === 0 && count($toBeExecuted) === 0) {
-                $this->logger->info('Phase fully executed, no awaiting migrations', [
+                $logger->info('Phase {phase} fully executed, no awaiting migrations', [
                     'phase' => $phase->value,
                 ]);
             }
         }
 
         return $exitCode;
+    }
+
+    private function createLogger(OutputInterface $output): LoggerInterface
+    {
+        return $this->logger ?? new ConsoleLogger($output, [
+            LogLevel::NOTICE => OutputInterface::VERBOSITY_NORMAL,
+            LogLevel::INFO => OutputInterface::VERBOSITY_NORMAL,
+        ]);
     }
 
 }

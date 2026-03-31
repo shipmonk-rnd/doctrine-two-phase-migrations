@@ -43,13 +43,13 @@ class MigrationSkipCommandTest extends TestCase
         // Verify logging calls
         $logMessages = array_column($logCalls, 'message');
         self::assertContains('Starting migration skip', $logMessages);
-        self::assertContains('Found migrations to skip', $logMessages);
-        self::assertContains('Migration skipped', $logMessages);
-        self::assertContains('Migration skip completed', $logMessages);
+        self::assertContains('Found {count} migrations to skip in phase {phase}', $logMessages);
+        self::assertContains('Migration {version} phase {phase} skipped', $logMessages);
+        self::assertContains('Migration skip completed, {skippedCount} skipped', $logMessages);
 
         // Verify context of the skip
         foreach ($logCalls as $logCall) {
-            if ($logCall['message'] === 'Migration skipped') {
+            if ($logCall['message'] === 'Migration {version} phase {phase} skipped') {
                 self::assertArrayHasKey('version', $logCall['context']);
                 self::assertArrayHasKey('phase', $logCall['context']);
                 self::assertSame('fakeversion', $logCall['context']['version']);

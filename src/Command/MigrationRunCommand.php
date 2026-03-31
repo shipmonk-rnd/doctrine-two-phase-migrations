@@ -4,17 +4,20 @@ namespace ShipMonk\Doctrine\Migration\Command;
 
 use LogicException;
 use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
 use ShipMonk\Doctrine\Migration\MigrationPhase;
 use ShipMonk\Doctrine\Migration\MigrationService;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 use function array_map;
 use function count;
 use function in_array;
 use function is_string;
+use function round;
 
 #[AsCommand(self::NAME, description: 'Run all not executed migrations with specified phase')]
 class MigrationRunCommand extends Command
@@ -27,7 +30,7 @@ class MigrationRunCommand extends Command
 
     public function __construct(
         private readonly MigrationService $migrationService,
-        private readonly LoggerInterface $logger,
+        private readonly ?LoggerInterface $logger = null,
     )
     {
         parent::__construct();
@@ -53,21 +56,23 @@ class MigrationRunCommand extends Command
             throw new LogicException('Can never happen for required non-array argument');
         }
 
+        $logger = $this->createLogger($output);
+
         $phases = $this->getPhasesToRun($phaseArgument);
 
-        $this->logger->info('Starting migration execution', [
+        $logger->info('Starting migration execution (phase {phaseArgument})', [
             'phaseArgument' => $phaseArgument,
             'phases' => array_map(static fn (MigrationPhase $phase): string => $phase->value, $phases),
         ]);
 
-        $migratedSomething = $this->executeMigrations($phases);
+        $migratedSomething = $this->executeMigrations($logger, $phases);
 
         if (!$migratedSomething) {
-            $this->logger->notice('No migrations to execute', [
+            $logger->notice('No migrations to execute (phase {phaseArgument})', [
                 'phaseArgument' => $phaseArgument,
             ]);
         } else {
-            $this->logger->info('Migration execution completed', [
+            $logger->info('Migration execution completed (phase {phaseArgument})', [
                 'phaseArgument' => $phaseArgument,
             ]);
         }
@@ -78,7 +83,10 @@ class MigrationRunCommand extends Command
     /**
      * @param list<MigrationPhase> $phases
      */
-    private function executeMigrations(array $phases): bool
+    private function executeMigrations(
+        LoggerInterface $logger,
+        array $phases,
+    ): bool
     {
         $executed = [];
 
@@ -104,7 +112,7 @@ class MigrationRunCommand extends Command
         }
 
         if (count($pendingMigrations) > 0) {
-            $this->logger->info('Pending migrations found', [
+            $logger->info('{count} pending migrations found', [
                 'count' => count($pendingMigrations),
                 'migrations' => $pendingMigrations,
             ]);
@@ -116,7 +124,7 @@ class MigrationRunCommand extends Command
                     continue;
                 }
 
-                $this->executeMigration($version, $phase);
+                $this->executeMigration($logger, $version, $phase);
                 $migratedSomething = true;
             }
         }
@@ -125,21 +133,22 @@ class MigrationRunCommand extends Command
     }
 
     private function executeMigration(
+        LoggerInterface $logger,
         string $version,
         MigrationPhase $phase,
     ): void
     {
-        $this->logger->info('Executing migration', [
+        $logger->info('Executing migration {version} phase {phase}', [
             'version' => $version,
             'phase' => $phase->value,
         ]);
 
         $run = $this->migrationService->executeMigration($version, $phase);
 
-        $this->logger->info('Migration executed successfully', [
+        $logger->info('Migration {version} phase {phase} executed successfully, {durationSeconds} s elapsed', [
             'version' => $version,
             'phase' => $phase->value,
-            'durationSeconds' => $run->getDuration(),
+            'durationSeconds' => round($run->getDuration(), 3),
             'startedAt' => $run->getStartedAt()->format('Y-m-d H:i:s.u'),
             'finishedAt' => $run->getFinishedAt()->format('Y-m-d H:i:s.u'),
         ]);
@@ -163,6 +172,14 @@ class MigrationRunCommand extends Command
         }
 
         throw new LogicException('Unexpected phase argument');
+    }
+
+    private function createLogger(OutputInterface $output): LoggerInterface
+    {
+        return $this->logger ?? new ConsoleLogger($output, [
+            LogLevel::NOTICE => OutputInterface::VERBOSITY_NORMAL,
+            LogLevel::INFO => OutputInterface::VERBOSITY_NORMAL,
+        ]);
     }
 
 }
