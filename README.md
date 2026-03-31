@@ -45,6 +45,8 @@ The bundle requires `symfony/http-kernel` ^6.4+.
 All commands and services are registered automatically, and `Doctrine\ORM\EntityManagerInterface` is autowired.
 If you register a custom `MigrationExecutor`, `MigrationAnalyzer`, or `MigrationVersionProvider` service, it will be picked up automatically.
 
+All commands accept an optional `Psr\Log\LoggerInterface`. When a logger is available (e.g. via MonologBundle), structured log messages with context are emitted. When no logger is injected, commands fall back to `Symfony\Component\Console\Logger\ConsoleLogger` and write directly to the console output.
+
 <details>
 <summary>Manual service registration (without the bundle)</summary>
 
@@ -85,7 +87,8 @@ After installation, you need to create `migration` table in your database. It is
 $ bin/console migration:init
 
 # example output:
-Creating migration table... done.
+[info] Initializing migration table doctrine_migration
+[info] Migration table doctrine_migration created successfully
 ```
 
 #### Generating new migration:
@@ -99,7 +102,9 @@ When no diff is detected, empty migration class is generated.
 $ bin/console migration:generate
 
 # example output:
-Migration version 20230217063818 was generated
+[info] Starting migration generation
+[info] 1 schema changes detected
+[info] Migration version 20230217063818 generated successfully
 ```
 
 The generated file then looks like this:
@@ -136,19 +141,22 @@ You can check awaiting migrations and entity sync status:
 $ bin/console migration:check
 
 # example success output:
-Phase before fully executed, no awaiting migrations
-Phase after fully executed, no awaiting migrations
-Database is synced with entities, no migration needed.
+[info] Starting migration check
+[info] Phase before fully executed, no awaiting migrations
+[info] Phase after fully executed, no awaiting migrations
+[info] Database is synced with entities, no migration needed
+[info] Migration check completed
 ```
 
 ```bash
 $ bin/console migration:check
 
 # example failure output:
-Phase before fully executed, no awaiting migrations
-Phase after has executed migrations not present in /app/migrations: 20220208123456
-Database is not synced with entities, missing updates:
- > DROP INDEX IDX_9DA1A2026EA0B6CA ON my_table
+[info] Starting migration check
+[info] Phase before fully executed, no awaiting migrations
+[error] Phase after has executed migrations not present in /app/migrations: 20220208123456
+[warning] Database is not synced with entities, 1 missing updates
+[info] Migration check completed
 ```
 
 #### Skipping all migrations:
@@ -160,30 +168,45 @@ This will mark all not executed migrations in all stages as migrated.
 $ bin/console migration:skip
 
 # example output:
-Migration 20230214154154 phase after skipped.
-Migration 20230214155401 phase after skipped.
-Migration 20230215050511 phase after skipped.
-Migration 20230217061357 phase after skipped.
+[info] Starting migration skip
+[info] Found 4 migrations to skip in phase after
+[info] Migration 20230214154154 phase after skipped
+[info] Migration 20230214155401 phase after skipped
+[info] Migration 20230215050511 phase after skipped
+[info] Migration 20230217061357 phase after skipped
+[info] Migration skip completed, 4 skipped
 ```
 
 #### Executing migration:
 
-Execution is performed without any interaction and does not fail nor warn when no migration is present for execution.
+Execution is performed without any interaction and does not fail when no migration is present for execution.
 
 ```bash
 $ bin/console migration:run before
 
 # example output:
-Executing migration 20220224045126 phase before... done, 0.032 s elapsed.
-Executing migration 20220224081809 phase before... done, 0.019 s elapsed.
-Executing migration 20220224114846 phase before... done, 0.015 s elapsed.
+[info] Starting migration execution (phase before)
+[info] 3 pending migrations found
+[info] Executing migration 20220224045126 phase before
+[info] Migration 20220224045126 phase before executed successfully, 0.032 s elapsed
+[info] Executing migration 20220224081809 phase before
+[info] Migration 20220224081809 phase before executed successfully, 0.019 s elapsed
+[info] Executing migration 20220224114846 phase before
+[info] Migration 20220224114846 phase before executed successfully, 0.015 s elapsed
+[info] Migration execution completed (phase before)
 
 $ bin/console migration:run after
 
 # example output:
-Executing migration 20220224045126 phase after... done, 0.033 s elapsed.
-Executing migration 20220224081809 phase after... done, 0.006 s elapsed.
-Executing migration 20220224114846 phase after... done, 0.000 s elapsed.
+[info] Starting migration execution (phase after)
+[info] 3 pending migrations found
+[info] Executing migration 20220224045126 phase after
+[info] Migration 20220224045126 phase after executed successfully, 0.033 s elapsed
+[info] Executing migration 20220224081809 phase after
+[info] Migration 20220224081809 phase after executed successfully, 0.006 s elapsed
+[info] Executing migration 20220224114846 phase after
+[info] Migration 20220224114846 phase after executed successfully, 0 s elapsed
+[info] Migration execution completed (phase after)
 ```
 
 When executing all the migrations (e.g. in test environment) you probably want to achieve one-by-one execution. You can do that by:
@@ -192,10 +215,17 @@ When executing all the migrations (e.g. in test environment) you probably want t
 $ bin/console migration:run both
 
 # example output:
-Executing migration 20220224045126 phase before... done, 0.032 s elapsed.
-Executing migration 20220224045126 phase after... done, 0.033 s elapsed.
-Executing migration 20220224081809 phase before... done, 0.019 s elapsed.
-Executing migration 20220224081809 phase after... done, 0.006 s elapsed.
+[info] Starting migration execution (phase both)
+[info] 4 pending migrations found
+[info] Executing migration 20220224045126 phase before
+[info] Migration 20220224045126 phase before executed successfully, 0.032 s elapsed
+[info] Executing migration 20220224045126 phase after
+[info] Migration 20220224045126 phase after executed successfully, 0.033 s elapsed
+[info] Executing migration 20220224081809 phase before
+[info] Migration 20220224081809 phase before executed successfully, 0.019 s elapsed
+[info] Executing migration 20220224081809 phase after
+[info] Migration 20220224081809 phase after executed successfully, 0.006 s elapsed
+[info] Migration execution completed (phase both)
 ```
 
 ### Advanced usage
