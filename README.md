@@ -169,12 +169,9 @@ $ bin/console migration:skip
 
 # example output:
 [info] Starting migration skip
-[info] Found 4 migrations to skip in phase after
+[info] Found 1 migrations to skip in phase after
 [info] Migration 20230214154154 phase after skipped
-[info] Migration 20230214155401 phase after skipped
-[info] Migration 20230215050511 phase after skipped
-[info] Migration 20230217061357 phase after skipped
-[info] Migration skip completed, 4 skipped
+[info] Migration skip completed, 1 skipped
 ```
 
 #### Executing migration:
@@ -186,26 +183,18 @@ $ bin/console migration:run before
 
 # example output:
 [info] Starting migration execution (phase before)
-[info] 3 pending migrations found
+[info] 1 pending migrations found
 [info] Executing migration 20220224045126 phase before
 [info] Migration 20220224045126 phase before executed successfully, 0.032 s elapsed
-[info] Executing migration 20220224081809 phase before
-[info] Migration 20220224081809 phase before executed successfully, 0.019 s elapsed
-[info] Executing migration 20220224114846 phase before
-[info] Migration 20220224114846 phase before executed successfully, 0.015 s elapsed
 [info] Migration execution completed (phase before)
 
 $ bin/console migration:run after
 
 # example output:
 [info] Starting migration execution (phase after)
-[info] 3 pending migrations found
+[info] 1 pending migrations found
 [info] Executing migration 20220224045126 phase after
 [info] Migration 20220224045126 phase after executed successfully, 0.033 s elapsed
-[info] Executing migration 20220224081809 phase after
-[info] Migration 20220224081809 phase after executed successfully, 0.006 s elapsed
-[info] Executing migration 20220224114846 phase after
-[info] Migration 20220224114846 phase after executed successfully, 0 s elapsed
 [info] Migration execution completed (phase after)
 ```
 
@@ -216,15 +205,11 @@ $ bin/console migration:run both
 
 # example output:
 [info] Starting migration execution (phase both)
-[info] 4 pending migrations found
+[info] 2 pending migrations found
 [info] Executing migration 20220224045126 phase before
 [info] Migration 20220224045126 phase before executed successfully, 0.032 s elapsed
 [info] Executing migration 20220224045126 phase after
 [info] Migration 20220224045126 phase after executed successfully, 0.033 s elapsed
-[info] Executing migration 20220224081809 phase before
-[info] Migration 20220224081809 phase before executed successfully, 0.019 s elapsed
-[info] Executing migration 20220224081809 phase after
-[info] Migration 20220224081809 phase after executed successfully, 0.006 s elapsed
 [info] Migration execution completed (phase both)
 ```
 
