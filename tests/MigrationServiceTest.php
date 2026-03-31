@@ -12,7 +12,6 @@ use function array_map;
 use function file_get_contents;
 use function glob;
 use function is_dir;
-use function is_string;
 use function mkdir;
 use function rmdir;
 use function str_contains;
@@ -60,12 +59,12 @@ class MigrationServiceTest extends TestCase
         self::assertEquals([], $service->getPreparedVersions());
 
         $generatedFile = $service->generateMigrationFile($sqls);
-        $generatedVersion = $generatedFile->getVersion();
-        $generatedContents = file_get_contents($generatedFile->getFilePath());
+        $generatedVersion = $generatedFile->version;
+        $generatedContents = file_get_contents($generatedFile->filePath);
 
         self::assertNotFalse($generatedContents);
 
-        require $generatedFile->getFilePath();
+        require $generatedFile->filePath;
 
         foreach ($sqls as $sql) {
             self::assertStringContainsString($sql, $generatedContents);
@@ -118,10 +117,10 @@ class MigrationServiceTest extends TestCase
         $transactionalMigrationFile = $transactionalService->generateMigrationFile([]);
         $nonTransactionalMigrationFile = $nonTransactionalService->generateMigrationFile([]);
 
-        require $transactionalMigrationFile->getFilePath();
-        require $nonTransactionalMigrationFile->getFilePath();
+        require $transactionalMigrationFile->filePath;
+        require $nonTransactionalMigrationFile->filePath;
 
-        $transactionalService->executeMigration($transactionalMigrationFile->getVersion(), MigrationPhase::BEFORE);
+        $transactionalService->executeMigration($transactionalMigrationFile->version, MigrationPhase::BEFORE);
 
         self::assertSame([
             'Beginning transaction',
@@ -131,7 +130,7 @@ class MigrationServiceTest extends TestCase
 
         $logger->clean();
 
-        $nonTransactionalService->executeMigration($nonTransactionalMigrationFile->getVersion(), MigrationPhase::BEFORE);
+        $nonTransactionalService->executeMigration($nonTransactionalMigrationFile->version, MigrationPhase::BEFORE);
 
         self::assertSame([
             'INSERT INTO migration (version, phase, started_at, finished_at) VALUES (?, ?, ?, ?)',
@@ -157,15 +156,17 @@ class MigrationServiceTest extends TestCase
         $migrationsService->initializeMigrationTable();
         $logger->clean();
 
+        $migrationsService = $this->createMigrationService($entityManager, versionProvider: $versionProvider, statementAnalyzer: $this->createPhaseRoutingAnalyzer());
+
         $migrationFile = $migrationsService->generateMigrationFile([
-            new Statement('SELECT 1', MigrationPhase::BEFORE),
-            new Statement('SELECT 2', MigrationPhase::AFTER),
-            new Statement('SELECT 3'), // no phase defaults to BEFORE
+            'SELECT 1',
+            'SELECT 2',
+            'SELECT 3',
         ]);
 
-        require $migrationFile->getFilePath();
+        require $migrationFile->filePath;
 
-        $migrationsService->executeMigration($migrationFile->getVersion(), MigrationPhase::BEFORE);
+        $migrationsService->executeMigration($migrationFile->version, MigrationPhase::BEFORE);
 
         self::assertSame([
             'SELECT 1',
@@ -175,7 +176,7 @@ class MigrationServiceTest extends TestCase
 
         $logger->clean();
 
-        $migrationsService->executeMigration($migrationFile->getVersion(), MigrationPhase::AFTER);
+        $migrationsService->executeMigration($migrationFile->version, MigrationPhase::AFTER);
 
         self::assertSame([
             'SELECT 2',
@@ -197,42 +198,16 @@ class MigrationServiceTest extends TestCase
         };
         [$entityManager, $logger] = $this->createEntityManagerAndLogger();
 
-        $statementAnalyser = new class implements MigrationAnalyzer
-        {
-
-            /**
-             * @param list<string|Statement> $statements
-             * @return list<Statement>
-             */
-            public function analyze(array $statements): array
-            {
-                $result = [];
-
-                foreach ($statements as $statement) {
-                    if (is_string($statement) && str_contains($statement, '2')) {
-                        $result[] = new Statement($statement, MigrationPhase::AFTER);
-                    } elseif (is_string($statement)) {
-                        $result[] = new Statement($statement, MigrationPhase::BEFORE);
-                    } else {
-                        $result[] = $statement;
-                    }
-                }
-
-                return $result;
-            }
-
-        };
-
-        $migrationsService = $this->createMigrationService($entityManager, [], false, $versionProvider, $statementAnalyser);
+        $migrationsService = $this->createMigrationService($entityManager, [], false, $versionProvider, $this->createPhaseRoutingAnalyzer());
 
         $migrationsService->initializeMigrationTable();
         $logger->clean();
 
         $migrationFile = $migrationsService->generateMigrationFile(['SELECT 1', 'SELECT 2']);
 
-        require $migrationFile->getFilePath();
+        require $migrationFile->filePath;
 
-        $migrationsService->executeMigration($migrationFile->getVersion(), MigrationPhase::BEFORE);
+        $migrationsService->executeMigration($migrationFile->version, MigrationPhase::BEFORE);
 
         self::assertSame([
             'SELECT 1',
@@ -241,7 +216,7 @@ class MigrationServiceTest extends TestCase
 
         $logger->clean();
 
-        $migrationsService->executeMigration($migrationFile->getVersion(), MigrationPhase::AFTER);
+        $migrationsService->executeMigration($migrationFile->version, MigrationPhase::AFTER);
 
         self::assertSame([
             'SELECT 2',
@@ -355,6 +330,33 @@ class MigrationServiceTest extends TestCase
     private function getMigrationsTestDir(): string
     {
         return __DIR__ . '/../tmp/migrations';
+    }
+
+    private function createPhaseRoutingAnalyzer(): MigrationAnalyzer
+    {
+        return new class implements MigrationAnalyzer
+        {
+
+            /**
+             * @param list<string> $statements
+             * @return list<Statement>
+             */
+            public function analyze(array $statements): array
+            {
+                $result = [];
+
+                foreach ($statements as $statement) {
+                    if (str_contains($statement, '2')) {
+                        $result[] = new Statement($statement, MigrationPhase::AFTER);
+                    } else {
+                        $result[] = new Statement($statement, MigrationPhase::BEFORE);
+                    }
+                }
+
+                return $result;
+            }
+
+        };
     }
 
 }
