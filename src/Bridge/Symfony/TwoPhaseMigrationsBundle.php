@@ -46,7 +46,7 @@ class TwoPhaseMigrationsBundle extends AbstractBundle
      *     template_indent: ?string,
      * } $config
      */
-    public function loadExtension(
+    public function loadExtension( // @phpstan-ignore method.childParameterType, method.childParameterType
         array $config,
         ContainerConfigurator $container,
         ContainerBuilder $builder,

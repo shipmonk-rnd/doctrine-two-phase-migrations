@@ -40,11 +40,6 @@ parameters:
             count: 1
 
         -
-            # @param narrowing for documented config shape
-            identifier: method.childParameterType
-            path: src/Bridge/Symfony/*
-
-        -
             identifier: method.internal
             path: tests/*
 
