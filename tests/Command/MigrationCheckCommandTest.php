@@ -39,7 +39,7 @@ class MigrationCheckCommandTest extends TestCase
         $command = new MigrationCheckCommand($migrationService, $logger);
         $exitCode = $command->run(new ArrayInput([]), $output);
 
-        self::assertSame(5, $exitCode); // EXIT_ENTITIES_NOT_SYNCED | EXIT_AWAITING_MIGRATION
+        self::assertSame(MigrationCheckCommand::EXIT_ENTITIES_NOT_SYNCED | MigrationCheckCommand::EXIT_AWAITING_MIGRATION, $exitCode);
 
         self::assertTrue($logger->hasMessage('Starting migration check'));
         self::assertTrue($logger->hasMessage('Phase {phase} fully executed, no awaiting migrations'));

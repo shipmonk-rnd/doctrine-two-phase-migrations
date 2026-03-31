@@ -22,10 +22,10 @@ class MigrationCheckCommand extends Command
 
     public const NAME = 'migration:check';
 
-    private const EXIT_ENTITIES_NOT_SYNCED = 4;
-    private const EXIT_UNKNOWN_MIGRATION = 2;
-    private const EXIT_AWAITING_MIGRATION = 1;
-    private const EXIT_OK = 0;
+    public const EXIT_ENTITIES_NOT_SYNCED = 4;
+    public const EXIT_UNKNOWN_MIGRATION = 2;
+    public const EXIT_AWAITING_MIGRATION = 1;
+    public const EXIT_OK = 0;
 
     public function __construct(
         private readonly MigrationService $migrationService,
