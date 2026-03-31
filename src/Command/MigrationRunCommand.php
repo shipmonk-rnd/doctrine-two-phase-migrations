@@ -4,14 +4,12 @@ namespace ShipMonk\Doctrine\Migration\Command;
 
 use LogicException;
 use Psr\Log\LoggerInterface;
-use Psr\Log\LogLevel;
 use ShipMonk\Doctrine\Migration\MigrationPhase;
 use ShipMonk\Doctrine\Migration\MigrationService;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 use function array_map;
 use function count;
@@ -22,6 +20,8 @@ use function round;
 #[AsCommand(self::NAME, description: 'Run all not executed migrations with specified phase')]
 class MigrationRunCommand extends Command
 {
+
+    use ConsoleLoggerFallbackTrait;
 
     public const NAME = 'migration:run';
 
@@ -172,14 +172,6 @@ class MigrationRunCommand extends Command
         }
 
         throw new LogicException('Unexpected phase argument');
-    }
-
-    private function createLogger(OutputInterface $output): LoggerInterface
-    {
-        return $this->logger ?? new ConsoleLogger($output, [
-            LogLevel::NOTICE => OutputInterface::VERBOSITY_NORMAL,
-            LogLevel::INFO => OutputInterface::VERBOSITY_NORMAL,
-        ]);
     }
 
 }

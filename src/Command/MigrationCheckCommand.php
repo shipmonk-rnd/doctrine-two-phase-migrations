@@ -3,13 +3,11 @@
 namespace ShipMonk\Doctrine\Migration\Command;
 
 use Psr\Log\LoggerInterface;
-use Psr\Log\LogLevel;
 use ShipMonk\Doctrine\Migration\MigrationPhase;
 use ShipMonk\Doctrine\Migration\MigrationService;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 use function array_diff;
 use function array_values;
@@ -19,6 +17,8 @@ use function implode;
 #[AsCommand(self::NAME, description: 'Check if entities are in sync with database and if migrations were executed')]
 class MigrationCheckCommand extends Command
 {
+
+    use ConsoleLoggerFallbackTrait;
 
     public const NAME = 'migration:check';
 
@@ -112,14 +112,6 @@ class MigrationCheckCommand extends Command
         }
 
         return $exitCode;
-    }
-
-    private function createLogger(OutputInterface $output): LoggerInterface
-    {
-        return $this->logger ?? new ConsoleLogger($output, [
-            LogLevel::NOTICE => OutputInterface::VERBOSITY_NORMAL,
-            LogLevel::INFO => OutputInterface::VERBOSITY_NORMAL,
-        ]);
     }
 
 }

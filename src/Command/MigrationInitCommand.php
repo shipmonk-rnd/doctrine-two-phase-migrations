@@ -3,17 +3,17 @@
 namespace ShipMonk\Doctrine\Migration\Command;
 
 use Psr\Log\LoggerInterface;
-use Psr\Log\LogLevel;
 use ShipMonk\Doctrine\Migration\MigrationService;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(self::NAME, description: 'Create migration table in database')]
 class MigrationInitCommand extends Command
 {
+
+    use ConsoleLoggerFallbackTrait;
 
     public const NAME = 'migration:init';
 
@@ -30,10 +30,7 @@ class MigrationInitCommand extends Command
         OutputInterface $output,
     ): int
     {
-        $logger = $this->logger ?? new ConsoleLogger($output, [
-            LogLevel::NOTICE => OutputInterface::VERBOSITY_NORMAL,
-            LogLevel::INFO => OutputInterface::VERBOSITY_NORMAL,
-        ]);
+        $logger = $this->createLogger($output);
 
         $tableName = $this->migrationService->getConfig()->getMigrationTableName();
 
