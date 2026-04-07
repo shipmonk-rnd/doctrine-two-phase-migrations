@@ -6,6 +6,7 @@ use LogicException;
 use Psr\Log\LoggerInterface;
 use ShipMonk\Doctrine\Migration\MigrationPhase;
 use ShipMonk\Doctrine\Migration\MigrationService;
+use ShipMonk\Doctrine\Migration\MigrationServiceRegistry;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -22,6 +23,7 @@ class MigrationRunCommand extends Command
 {
 
     use ConsoleLoggerFallbackTrait;
+    use MigrationServiceRegistryAwareTrait;
 
     public const NAME = 'migration:run';
 
@@ -29,7 +31,7 @@ class MigrationRunCommand extends Command
     public const PHASE_BOTH = 'both';
 
     public function __construct(
-        private readonly MigrationService $migrationService,
+        private readonly MigrationServiceRegistry $migrationServiceRegistry,
         private readonly ?LoggerInterface $logger = null,
     )
     {
@@ -43,6 +45,7 @@ class MigrationRunCommand extends Command
             InputArgument::REQUIRED,
             MigrationPhase::BEFORE->value . '|' . MigrationPhase::AFTER->value . '|' . self::PHASE_BOTH,
         );
+        $this->addNamespaceOption();
     }
 
     public function execute(
@@ -57,6 +60,7 @@ class MigrationRunCommand extends Command
         }
 
         $logger = $this->createLogger($output);
+        $migrationService = $this->getMigrationService($input);
 
         $phases = $this->getPhasesToRun($phaseArgument);
 
@@ -65,7 +69,7 @@ class MigrationRunCommand extends Command
             'phases' => array_map(static fn (MigrationPhase $phase): string => $phase->value, $phases),
         ]);
 
-        $migratedSomething = $this->executeMigrations($logger, $phases);
+        $migratedSomething = $this->executeMigrations($logger, $migrationService, $phases);
 
         if (!$migratedSomething) {
             $logger->notice('No migrations to execute (phase {phaseArgument})', [
@@ -85,20 +89,21 @@ class MigrationRunCommand extends Command
      */
     private function executeMigrations(
         LoggerInterface $logger,
+        MigrationService $migrationService,
         array $phases,
     ): bool
     {
         $executed = [];
 
         if (in_array(MigrationPhase::BEFORE, $phases, true)) {
-            $executed[MigrationPhase::BEFORE->value] = $this->migrationService->getExecutedVersions(MigrationPhase::BEFORE);
+            $executed[MigrationPhase::BEFORE->value] = $migrationService->getExecutedVersions(MigrationPhase::BEFORE);
         }
 
         if (in_array(MigrationPhase::AFTER, $phases, true)) {
-            $executed[MigrationPhase::AFTER->value] = $this->migrationService->getExecutedVersions(MigrationPhase::AFTER);
+            $executed[MigrationPhase::AFTER->value] = $migrationService->getExecutedVersions(MigrationPhase::AFTER);
         }
 
-        $preparedVersions = $this->migrationService->getPreparedVersions();
+        $preparedVersions = $migrationService->getPreparedVersions();
         $migratedSomething = false;
 
         $pendingMigrations = [];
@@ -124,7 +129,7 @@ class MigrationRunCommand extends Command
                     continue;
                 }
 
-                $this->executeMigration($logger, $version, $phase);
+                $this->executeMigration($logger, $migrationService, $version, $phase);
                 $migratedSomething = true;
             }
         }
@@ -134,6 +139,7 @@ class MigrationRunCommand extends Command
 
     private function executeMigration(
         LoggerInterface $logger,
+        MigrationService $migrationService,
         string $version,
         MigrationPhase $phase,
     ): void
@@ -143,7 +149,7 @@ class MigrationRunCommand extends Command
             'phase' => $phase->value,
         ]);
 
-        $run = $this->migrationService->executeMigration($version, $phase);
+        $run = $migrationService->executeMigration($version, $phase);
 
         $logger->info('Migration {version} phase {phase} executed successfully, {durationSeconds} s elapsed', [
             'version' => $version,

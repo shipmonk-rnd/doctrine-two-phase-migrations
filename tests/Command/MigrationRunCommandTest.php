@@ -3,10 +3,12 @@
 namespace ShipMonk\Doctrine\Migration\Command;
 
 use DateTimeImmutable;
+use LogicException;
 use PHPUnit\Framework\TestCase;
 use ShipMonk\Doctrine\Migration\MigrationPhase;
 use ShipMonk\Doctrine\Migration\MigrationRun;
 use ShipMonk\Doctrine\Migration\MigrationService;
+use ShipMonk\Doctrine\Migration\MigrationServiceRegistry;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Tester\CommandTester;
@@ -31,7 +33,7 @@ class MigrationRunCommandTest extends TestCase
             ->willReturn(new MigrationRun('fakeversion', MigrationPhase::AFTER, new DateTimeImmutable('today 00:00:00'), new DateTimeImmutable('today 00:00:01')));
 
         $logger = new TestLogger();
-        $command = new MigrationRunCommand($migrationService, $logger);
+        $command = new MigrationRunCommand(new MigrationServiceRegistry(['default' => $migrationService]), $logger);
 
         $exitCode = $this->runPhase($command, MigrationPhase::BEFORE->value);
         self::assertSame(0, $exitCode);
@@ -69,7 +71,7 @@ class MigrationRunCommandTest extends TestCase
             });
 
         $logger = new TestLogger();
-        $command = new MigrationRunCommand($migrationService, $logger);
+        $command = new MigrationRunCommand(new MigrationServiceRegistry(['default' => $migrationService]), $logger);
         $exitCode = $this->runPhase($command, MigrationRunCommand::PHASE_BOTH);
 
         self::assertSame(0, $exitCode);
@@ -85,8 +87,59 @@ class MigrationRunCommandTest extends TestCase
     {
         self::expectExceptionMessage('Not enough arguments (missing: "phase").');
 
-        $tester = new CommandTester(new MigrationRunCommand($this->createMock(MigrationService::class)));
+        $tester = new CommandTester(new MigrationRunCommand(new MigrationServiceRegistry(['default' => $this->createMock(MigrationService::class)])));
         $tester->execute([]);
+    }
+
+    public function testRunWithNamespace(): void
+    {
+        $migrationService = $this->createMock(MigrationService::class);
+        $migrationService->expects(self::once())
+            ->method('getExecutedVersions')
+            ->willReturn([]);
+        $migrationService->expects(self::once())
+            ->method('getPreparedVersions')
+            ->willReturn(['v1' => 'v1']);
+        $migrationService->expects(self::once())
+            ->method('executeMigration')
+            ->willReturn($this->createMock(MigrationRun::class));
+
+        $otherService = $this->createMock(MigrationService::class);
+        $otherService->expects(self::never())->method('executeMigration');
+
+        $registry = new MigrationServiceRegistry([
+            'default' => $otherService,
+            'analytics' => $migrationService,
+        ]);
+
+        $logger = new TestLogger();
+        $command = new MigrationRunCommand($registry, $logger);
+
+        $input = new ArrayInput([
+            MigrationRunCommand::ARGUMENT_PHASE => MigrationPhase::BEFORE->value,
+            '--namespace' => 'analytics',
+        ], $command->getDefinition());
+        $exitCode = $command->run($input, new BufferedOutput());
+
+        self::assertSame(0, $exitCode);
+    }
+
+    public function testRunRequiresNamespaceWhenMultiple(): void
+    {
+        $registry = new MigrationServiceRegistry([
+            'default' => $this->createMock(MigrationService::class),
+            'analytics' => $this->createMock(MigrationService::class),
+        ]);
+
+        $command = new MigrationRunCommand($registry);
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('Multiple migration namespaces are registered');
+
+        $input = new ArrayInput([
+            MigrationRunCommand::ARGUMENT_PHASE => MigrationPhase::BEFORE->value,
+        ], $command->getDefinition());
+        $command->run($input, new BufferedOutput());
     }
 
     private function runPhase(
