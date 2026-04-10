@@ -49,10 +49,10 @@ class MigrationSkipCommand extends Command
             $toSkip = array_values(array_diff($prepared, $executed));
 
             if (count($toSkip) > 0) {
-                $logger->info('Found {count} migrations to skip in phase {phase}', [
-                    'phase' => $phase->value,
-                    'count' => count($toSkip),
-                    'versions' => $toSkip,
+                $logger->info('Found {migrationSkipCount} migrations to skip in phase {migrationPhase}', [
+                    'migrationPhase' => $phase->value,
+                    'migrationSkipCount' => count($toSkip),
+                    'migrationVersions' => $toSkip,
                 ]);
             }
 
@@ -62,13 +62,13 @@ class MigrationSkipCommand extends Command
 
                 $this->migrationService->markMigrationExecuted($run);
 
-                $logger->info('Migration {version} phase {phase} skipped', [
-                    'version' => $version,
-                    'phase' => $phase->value,
-                    'markedAt' => $now->format('Y-m-d H:i:s.u'),
+                $logger->info('Migration {migrationVersion} phase {migrationPhase} skipped', [
+                    'migrationVersion' => $version,
+                    'migrationPhase' => $phase->value,
+                    'migrationMarkedAt' => $now->format('Y-m-d H:i:s.u'),
                 ]);
 
-                $skippedMigrations[] = ['version' => $version, 'phase' => $phase->value];
+                $skippedMigrations[] = ['migrationVersion' => $version, 'migrationPhase' => $phase->value];
                 $skippedCount++;
             }
         }
@@ -76,9 +76,9 @@ class MigrationSkipCommand extends Command
         if ($skippedCount === 0) {
             $logger->notice('No migrations to skip');
         } else {
-            $logger->info('Migration skip completed, {skippedCount} skipped', [
-                'skippedCount' => $skippedCount,
-                'skippedMigrations' => $skippedMigrations,
+            $logger->info('Migration skip completed, {migrationSkippedCount} skipped', [
+                'migrationSkippedCount' => $skippedCount,
+                'migrationSkipped' => $skippedMigrations,
             ]);
         }
 

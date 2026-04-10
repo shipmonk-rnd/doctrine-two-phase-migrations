@@ -34,15 +34,15 @@ class MigrationGenerateCommandTest extends TestCase
         self::assertSame(0, $exitCode);
 
         self::assertTrue($logger->hasMessage('Starting migration generation'));
-        self::assertTrue($logger->hasMessage('{sqlCount} schema changes detected'));
-        self::assertTrue($logger->hasMessage('Migration version {version} generated successfully'));
+        self::assertTrue($logger->hasMessage('{migrationSqlCount} schema changes detected'));
+        self::assertTrue($logger->hasMessage('Migration version {migrationVersion} generated successfully'));
 
-        $context = $logger->getContextFor('Migration version {version} generated successfully');
+        $context = $logger->getContextFor('Migration version {migrationVersion} generated successfully');
         self::assertIsArray($context);
-        self::assertArrayHasKey('version', $context);
-        self::assertArrayHasKey('filePath', $context);
-        self::assertSame('fakeversion', $context['version']);
-        self::assertSame('fakepath', $context['filePath']);
+        self::assertArrayHasKey('migrationVersion', $context);
+        self::assertArrayHasKey('migrationFilePath', $context);
+        self::assertSame('fakeversion', $context['migrationVersion']);
+        self::assertSame('fakepath', $context['migrationFilePath']);
     }
 
     public function testGenerateEmpty(): void
@@ -66,7 +66,7 @@ class MigrationGenerateCommandTest extends TestCase
         self::assertSame(0, $exitCode);
 
         self::assertTrue($logger->hasMessage('No schema changes found, creating empty migration class'));
-        self::assertTrue($logger->hasMessage('Migration version {version} generated successfully'));
+        self::assertTrue($logger->hasMessage('Migration version {migrationVersion} generated successfully'));
     }
 
 }

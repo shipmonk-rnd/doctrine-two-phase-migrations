@@ -42,9 +42,9 @@ class MigrationCheckCommandTest extends TestCase
         self::assertSame(MigrationCheckCommand::EXIT_ENTITIES_NOT_SYNCED | MigrationCheckCommand::EXIT_AWAITING_MIGRATION, $exitCode);
 
         self::assertTrue($logger->hasMessage('Starting migration check'));
-        self::assertTrue($logger->hasMessage('Phase {phase} fully executed, no awaiting migrations'));
-        self::assertTrue($logger->hasMessage('Phase {phase} not fully executed, awaiting migrations: {awaitingMigrationsList}'));
-        self::assertTrue($logger->hasMessage('Database is not synced with entities, {missingUpdatesCount} missing updates'));
+        self::assertTrue($logger->hasMessage('Phase {migrationPhase} fully executed, no awaiting migrations'));
+        self::assertTrue($logger->hasMessage('Phase {migrationPhase} not fully executed, awaiting migrations: {migrationAwaitingList}'));
+        self::assertTrue($logger->hasMessage('Database is not synced with entities, {migrationMissingUpdatesCount} missing updates'));
         self::assertTrue($logger->hasMessage('Migration check completed'));
     }
 

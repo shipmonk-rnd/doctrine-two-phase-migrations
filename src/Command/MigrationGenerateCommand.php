@@ -41,19 +41,19 @@ class MigrationGenerateCommand extends Command
         if ($sqlCount === 0) {
             $logger->notice('No schema changes found, creating empty migration class');
         } else {
-            $logger->info('{sqlCount} schema changes detected', [
-                'sqlCount' => $sqlCount,
-                'sqls' => $sqls,
+            $logger->info('{migrationSqlCount} schema changes detected', [
+                'migrationSqlCount' => $sqlCount,
+                'migrationSqls' => $sqls,
             ]);
         }
 
         $file = $this->migrationService->generateMigrationFile($sqls);
 
-        $logger->info('Migration version {version} generated successfully', [
-            'version' => $file->version,
-            'filePath' => $file->filePath,
-            'sqlCount' => $sqlCount,
-            'isEmpty' => $sqlCount === 0,
+        $logger->info('Migration version {migrationVersion} generated successfully', [
+            'migrationVersion' => $file->version,
+            'migrationFilePath' => $file->filePath,
+            'migrationSqlCount' => $sqlCount,
+            'migrationIsEmpty' => $sqlCount === 0,
         ]);
 
         return 0;

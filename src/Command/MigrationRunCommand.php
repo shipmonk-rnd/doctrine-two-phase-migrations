@@ -60,20 +60,20 @@ class MigrationRunCommand extends Command
 
         $phases = $this->getPhasesToRun($phaseArgument);
 
-        $logger->info('Starting migration execution (phase {phaseArgument})', [
-            'phaseArgument' => $phaseArgument,
-            'phases' => array_map(static fn (MigrationPhase $phase): string => $phase->value, $phases),
+        $logger->info('Starting migration execution (phase {migrationPhaseArgument})', [
+            'migrationPhaseArgument' => $phaseArgument,
+            'migrationPhases' => array_map(static fn (MigrationPhase $phase): string => $phase->value, $phases),
         ]);
 
         $migratedSomething = $this->executeMigrations($logger, $phases);
 
         if (!$migratedSomething) {
-            $logger->notice('No migrations to execute (phase {phaseArgument})', [
-                'phaseArgument' => $phaseArgument,
+            $logger->notice('No migrations to execute (phase {migrationPhaseArgument})', [
+                'migrationPhaseArgument' => $phaseArgument,
             ]);
         } else {
-            $logger->info('Migration execution completed (phase {phaseArgument})', [
-                'phaseArgument' => $phaseArgument,
+            $logger->info('Migration execution completed (phase {migrationPhaseArgument})', [
+                'migrationPhaseArgument' => $phaseArgument,
             ]);
         }
 
@@ -106,15 +106,15 @@ class MigrationRunCommand extends Command
         foreach ($preparedVersions as $version) {
             foreach ($phases as $phase) {
                 if (!isset($executed[$phase->value][$version])) {
-                    $pendingMigrations[] = ['version' => $version, 'phase' => $phase->value];
+                    $pendingMigrations[] = ['migrationVersion' => $version, 'migrationPhase' => $phase->value];
                 }
             }
         }
 
         if (count($pendingMigrations) > 0) {
-            $logger->info('{count} pending migrations found', [
-                'count' => count($pendingMigrations),
-                'migrations' => $pendingMigrations,
+            $logger->info('{migrationPendingCount} pending migrations found', [
+                'migrationPendingCount' => count($pendingMigrations),
+                'migrationPending' => $pendingMigrations,
             ]);
         }
 
@@ -138,19 +138,19 @@ class MigrationRunCommand extends Command
         MigrationPhase $phase,
     ): void
     {
-        $logger->info('Executing migration {version} phase {phase}', [
-            'version' => $version,
-            'phase' => $phase->value,
+        $logger->info('Executing migration {migrationVersion} phase {migrationPhase}', [
+            'migrationVersion' => $version,
+            'migrationPhase' => $phase->value,
         ]);
 
         $run = $this->migrationService->executeMigration($version, $phase);
 
-        $logger->info('Migration {version} phase {phase} executed successfully, {durationSeconds} s elapsed', [
-            'version' => $version,
-            'phase' => $phase->value,
-            'durationSeconds' => round($run->getDuration(), 3),
-            'startedAt' => $run->getStartedAt()->format('Y-m-d H:i:s.u'),
-            'finishedAt' => $run->getFinishedAt()->format('Y-m-d H:i:s.u'),
+        $logger->info('Migration {migrationVersion} phase {migrationPhase} executed successfully, {migrationDurationSeconds} s elapsed', [
+            'migrationVersion' => $version,
+            'migrationPhase' => $phase->value,
+            'migrationDurationSeconds' => round($run->getDuration(), 3),
+            'migrationStartedAt' => $run->getStartedAt()->format('Y-m-d H:i:s.u'),
+            'migrationFinishedAt' => $run->getFinishedAt()->format('Y-m-d H:i:s.u'),
         ]);
     }
 
