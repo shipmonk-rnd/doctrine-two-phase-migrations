@@ -33,16 +33,16 @@ class MigrationSkipCommandTest extends TestCase
         self::assertSame(0, $exitCode);
 
         self::assertTrue($logger->hasMessage('Starting migration skip'));
-        self::assertTrue($logger->hasMessage('Found {count} migrations to skip in phase {phase}'));
-        self::assertTrue($logger->hasMessage('Migration {version} phase {phase} skipped'));
-        self::assertTrue($logger->hasMessage('Migration skip completed, {skippedCount} skipped'));
+        self::assertTrue($logger->hasMessage('Found {migrationSkipCount} migrations to skip in phase {migrationPhase}'));
+        self::assertTrue($logger->hasMessage('Migration {migrationVersion} phase {migrationPhase} skipped'));
+        self::assertTrue($logger->hasMessage('Migration skip completed, {migrationSkippedCount} skipped'));
 
-        $context = $logger->getContextFor('Migration {version} phase {phase} skipped');
+        $context = $logger->getContextFor('Migration {migrationVersion} phase {migrationPhase} skipped');
         self::assertIsArray($context);
-        self::assertArrayHasKey('version', $context);
-        self::assertArrayHasKey('phase', $context);
-        self::assertSame('fakeversion', $context['version']);
-        self::assertSame('after', $context['phase']);
+        self::assertArrayHasKey('migrationVersion', $context);
+        self::assertArrayHasKey('migrationPhase', $context);
+        self::assertSame('fakeversion', $context['migrationVersion']);
+        self::assertSame('after', $context['migrationPhase']);
     }
 
     public function testNoMigrationsToSkip(): void

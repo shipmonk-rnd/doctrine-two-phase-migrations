@@ -62,9 +62,9 @@ class MigrationCheckCommand extends Command
         $updateCount = count($updates);
 
         if ($updateCount !== 0) {
-            $logger->warning('Database is not synced with entities, {missingUpdatesCount} missing updates', [
-                'missingUpdatesCount' => $updateCount,
-                'missingUpdates' => $updates,
+            $logger->warning('Database is not synced with entities, {migrationMissingUpdatesCount} missing updates', [
+                'migrationMissingUpdatesCount' => $updateCount,
+                'migrationMissingUpdates' => $updates,
             ]);
             return self::EXIT_ENTITIES_NOT_SYNCED;
         }
@@ -87,26 +87,26 @@ class MigrationCheckCommand extends Command
 
             if (count($executedNotPresent) > 0) {
                 $exitCode |= self::EXIT_UNKNOWN_MIGRATION;
-                $logger->error('Phase {phase} has executed migrations not present in {migrationsDirectory}: {unknownMigrationsList}', [
-                    'phase' => $phase->value,
-                    'migrationsDirectory' => $migrationsDir,
-                    'unknownMigrations' => $executedNotPresent,
-                    'unknownMigrationsList' => implode(', ', $executedNotPresent),
+                $logger->error('Phase {migrationPhase} has executed migrations not present in {migrationDirectory}: {migrationUnknownList}', [
+                    'migrationPhase' => $phase->value,
+                    'migrationDirectory' => $migrationsDir,
+                    'migrationUnknown' => $executedNotPresent,
+                    'migrationUnknownList' => implode(', ', $executedNotPresent),
                 ]);
             }
 
             if (count($toBeExecuted) > 0) {
                 $exitCode |= self::EXIT_AWAITING_MIGRATION;
-                $logger->warning('Phase {phase} not fully executed, awaiting migrations: {awaitingMigrationsList}', [
-                    'phase' => $phase->value,
-                    'awaitingMigrations' => $toBeExecuted,
-                    'awaitingMigrationsList' => implode(', ', $toBeExecuted),
+                $logger->warning('Phase {migrationPhase} not fully executed, awaiting migrations: {migrationAwaitingList}', [
+                    'migrationPhase' => $phase->value,
+                    'migrationAwaiting' => $toBeExecuted,
+                    'migrationAwaitingList' => implode(', ', $toBeExecuted),
                 ]);
             }
 
             if (count($executedNotPresent) === 0 && count($toBeExecuted) === 0) {
-                $logger->info('Phase {phase} fully executed, no awaiting migrations', [
-                    'phase' => $phase->value,
+                $logger->info('Phase {migrationPhase} fully executed, no awaiting migrations', [
+                    'migrationPhase' => $phase->value,
                 ]);
             }
         }

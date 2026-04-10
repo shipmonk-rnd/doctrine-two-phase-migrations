@@ -35,11 +35,11 @@ class MigrationRunCommandTest extends TestCase
 
         $exitCode = $this->runPhase($command, MigrationPhase::BEFORE->value);
         self::assertSame(0, $exitCode);
-        self::assertTrue($logger->hasMessage('No migrations to execute (phase {phaseArgument})'));
+        self::assertTrue($logger->hasMessage('No migrations to execute (phase {migrationPhaseArgument})'));
 
         $exitCode = $this->runPhase($command, MigrationPhase::AFTER->value);
         self::assertSame(0, $exitCode);
-        self::assertTrue($logger->hasMessage('Migration {version} phase {phase} executed successfully, {durationSeconds} s elapsed'));
+        self::assertTrue($logger->hasMessage('Migration {migrationVersion} phase {migrationPhase} executed successfully, {migrationDurationSeconds} s elapsed'));
     }
 
     public function testRunBoth(): void
@@ -74,11 +74,11 @@ class MigrationRunCommandTest extends TestCase
 
         self::assertSame(0, $exitCode);
 
-        self::assertTrue($logger->hasMessage('Starting migration execution (phase {phaseArgument})'));
-        self::assertTrue($logger->hasMessage('{count} pending migrations found'));
-        self::assertTrue($logger->hasMessage('Executing migration {version} phase {phase}'));
-        self::assertTrue($logger->hasMessage('Migration {version} phase {phase} executed successfully, {durationSeconds} s elapsed'));
-        self::assertTrue($logger->hasMessage('Migration execution completed (phase {phaseArgument})'));
+        self::assertTrue($logger->hasMessage('Starting migration execution (phase {migrationPhaseArgument})'));
+        self::assertTrue($logger->hasMessage('{migrationPendingCount} pending migrations found'));
+        self::assertTrue($logger->hasMessage('Executing migration {migrationVersion} phase {migrationPhase}'));
+        self::assertTrue($logger->hasMessage('Migration {migrationVersion} phase {migrationPhase} executed successfully, {migrationDurationSeconds} s elapsed'));
+        self::assertTrue($logger->hasMessage('Migration execution completed (phase {migrationPhaseArgument})'));
     }
 
     public function testFailureNoArgs(): void
