@@ -3,7 +3,7 @@
 namespace ShipMonk\Doctrine\Migration\Command;
 
 use Psr\Log\LoggerInterface;
-use ShipMonk\Doctrine\Migration\MigrationService;
+use ShipMonk\Doctrine\Migration\MigrationServiceRegistry;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -15,15 +15,21 @@ class MigrationGenerateCommand extends Command
 {
 
     use ConsoleLoggerFallbackTrait;
+    use MigrationServiceRegistryAwareTrait;
 
     public const NAME = 'migration:generate';
 
     public function __construct(
-        private readonly MigrationService $migrationService,
+        private readonly MigrationServiceRegistry $migrationServiceRegistry,
         private readonly ?LoggerInterface $logger = null,
     )
     {
         parent::__construct();
+    }
+
+    protected function configure(): void
+    {
+        $this->addNamespaceOption();
     }
 
     public function execute(
@@ -32,10 +38,11 @@ class MigrationGenerateCommand extends Command
     ): int
     {
         $logger = $this->createLogger($output);
+        $migrationService = $this->getMigrationService($input);
 
         $logger->info('Starting migration generation');
 
-        $sqls = $this->migrationService->generateDiffSqls();
+        $sqls = $migrationService->generateDiffSqls();
         $sqlCount = count($sqls);
 
         if ($sqlCount === 0) {
@@ -47,7 +54,7 @@ class MigrationGenerateCommand extends Command
             ]);
         }
 
-        $file = $this->migrationService->generateMigrationFile($sqls);
+        $file = $migrationService->generateMigrationFile($sqls);
 
         $logger->info('Migration version {migrationVersion} generated successfully', [
             'migrationVersion' => $file->version,

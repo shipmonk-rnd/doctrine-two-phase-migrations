@@ -6,7 +6,7 @@ use DateTimeImmutable;
 use Psr\Log\LoggerInterface;
 use ShipMonk\Doctrine\Migration\MigrationPhase;
 use ShipMonk\Doctrine\Migration\MigrationRun;
-use ShipMonk\Doctrine\Migration\MigrationService;
+use ShipMonk\Doctrine\Migration\MigrationServiceRegistry;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -20,15 +20,21 @@ class MigrationSkipCommand extends Command
 {
 
     use ConsoleLoggerFallbackTrait;
+    use MigrationServiceRegistryAwareTrait;
 
     public const NAME = 'migration:skip';
 
     public function __construct(
-        private readonly MigrationService $migrationService,
+        private readonly MigrationServiceRegistry $migrationServiceRegistry,
         private readonly ?LoggerInterface $logger = null,
     )
     {
         parent::__construct();
+    }
+
+    protected function configure(): void
+    {
+        $this->addNamespaceOption();
     }
 
     public function execute(
@@ -37,6 +43,7 @@ class MigrationSkipCommand extends Command
     ): int
     {
         $logger = $this->createLogger($output);
+        $migrationService = $this->getMigrationService($input);
 
         $logger->info('Starting migration skip');
 
@@ -44,8 +51,8 @@ class MigrationSkipCommand extends Command
         $skippedMigrations = [];
 
         foreach (MigrationPhase::cases() as $phase) {
-            $executed = $this->migrationService->getExecutedVersions($phase);
-            $prepared = $this->migrationService->getPreparedVersions();
+            $executed = $migrationService->getExecutedVersions($phase);
+            $prepared = $migrationService->getPreparedVersions();
             $toSkip = array_values(array_diff($prepared, $executed));
 
             if (count($toSkip) > 0) {
@@ -60,7 +67,7 @@ class MigrationSkipCommand extends Command
                 $now = new DateTimeImmutable();
                 $run = new MigrationRun($version, $phase, $now, $now);
 
-                $this->migrationService->markMigrationExecuted($run);
+                $migrationService->markMigrationExecuted($run);
 
                 $logger->info('Migration {migrationVersion} phase {migrationPhase} skipped', [
                     'migrationVersion' => $version,

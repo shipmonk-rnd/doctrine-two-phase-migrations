@@ -5,6 +5,7 @@ namespace ShipMonk\Doctrine\Migration\Command;
 use PHPUnit\Framework\TestCase;
 use ShipMonk\Doctrine\Migration\MigrationConfig;
 use ShipMonk\Doctrine\Migration\MigrationService;
+use ShipMonk\Doctrine\Migration\MigrationServiceRegistry;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 
@@ -36,7 +37,7 @@ class MigrationCheckCommandTest extends TestCase
         $logger = new TestLogger();
 
         $output = new BufferedOutput();
-        $command = new MigrationCheckCommand($migrationService, $logger);
+        $command = new MigrationCheckCommand(new MigrationServiceRegistry(['default' => $migrationService]), $logger);
         $exitCode = $command->run(new ArrayInput([]), $output);
 
         self::assertSame(MigrationCheckCommand::EXIT_ENTITIES_NOT_SYNCED | MigrationCheckCommand::EXIT_AWAITING_MIGRATION, $exitCode);

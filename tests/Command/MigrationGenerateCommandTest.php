@@ -5,6 +5,7 @@ namespace ShipMonk\Doctrine\Migration\Command;
 use PHPUnit\Framework\TestCase;
 use ShipMonk\Doctrine\Migration\MigrationFile;
 use ShipMonk\Doctrine\Migration\MigrationService;
+use ShipMonk\Doctrine\Migration\MigrationServiceRegistry;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 
@@ -28,7 +29,7 @@ class MigrationGenerateCommandTest extends TestCase
         $logger = new TestLogger();
 
         $output = new BufferedOutput();
-        $command = new MigrationGenerateCommand($migrationService, $logger);
+        $command = new MigrationGenerateCommand(new MigrationServiceRegistry(['default' => $migrationService]), $logger);
         $exitCode = $command->run(new ArrayInput([]), $output);
 
         self::assertSame(0, $exitCode);
@@ -60,7 +61,7 @@ class MigrationGenerateCommandTest extends TestCase
         $logger = new TestLogger();
 
         $output = new BufferedOutput();
-        $command = new MigrationGenerateCommand($migrationService, $logger);
+        $command = new MigrationGenerateCommand(new MigrationServiceRegistry(['default' => $migrationService]), $logger);
         $exitCode = $command->run(new ArrayInput([]), $output);
 
         self::assertSame(0, $exitCode);

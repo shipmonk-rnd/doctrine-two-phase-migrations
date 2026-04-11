@@ -5,6 +5,7 @@ namespace ShipMonk\Doctrine\Migration\Command;
 use Psr\Log\LoggerInterface;
 use ShipMonk\Doctrine\Migration\MigrationPhase;
 use ShipMonk\Doctrine\Migration\MigrationService;
+use ShipMonk\Doctrine\Migration\MigrationServiceRegistry;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -19,6 +20,7 @@ class MigrationCheckCommand extends Command
 {
 
     use ConsoleLoggerFallbackTrait;
+    use MigrationServiceRegistryAwareTrait;
 
     public const NAME = 'migration:check';
 
@@ -28,11 +30,16 @@ class MigrationCheckCommand extends Command
     public const EXIT_OK = 0;
 
     public function __construct(
-        private readonly MigrationService $migrationService,
+        private readonly MigrationServiceRegistry $migrationServiceRegistry,
         private readonly ?LoggerInterface $logger = null,
     )
     {
         parent::__construct();
+    }
+
+    protected function configure(): void
+    {
+        $this->addNamespaceOption();
     }
 
     public function execute(
@@ -41,12 +48,13 @@ class MigrationCheckCommand extends Command
     ): int
     {
         $logger = $this->createLogger($output);
+        $migrationService = $this->getMigrationService($input);
 
         $logger->info('Starting migration check');
 
         $exitCode = self::EXIT_OK;
-        $exitCode |= $this->checkMigrationsExecuted($logger);
-        $exitCode |= $this->checkEntitiesSyncedWithDatabase($logger);
+        $exitCode |= $this->checkMigrationsExecuted($logger, $migrationService);
+        $exitCode |= $this->checkEntitiesSyncedWithDatabase($logger, $migrationService);
 
         $logger->info('Migration check completed', [
             'exitCode' => $exitCode,
@@ -56,9 +64,12 @@ class MigrationCheckCommand extends Command
         return $exitCode;
     }
 
-    private function checkEntitiesSyncedWithDatabase(LoggerInterface $logger): int
+    private function checkEntitiesSyncedWithDatabase(
+        LoggerInterface $logger,
+        MigrationService $migrationService,
+    ): int
     {
-        $updates = $this->migrationService->generateDiffSqls();
+        $updates = $migrationService->generateDiffSqls();
         $updateCount = count($updates);
 
         if ($updateCount !== 0) {
@@ -73,14 +84,17 @@ class MigrationCheckCommand extends Command
         return self::EXIT_OK;
     }
 
-    private function checkMigrationsExecuted(LoggerInterface $logger): int
+    private function checkMigrationsExecuted(
+        LoggerInterface $logger,
+        MigrationService $migrationService,
+    ): int
     {
         $exitCode = self::EXIT_OK;
-        $migrationsDir = $this->migrationService->getConfig()->getMigrationsDirectory();
+        $migrationsDir = $migrationService->getConfig()->getMigrationsDirectory();
 
         foreach (MigrationPhase::cases() as $phase) {
-            $executed = $this->migrationService->getExecutedVersions($phase);
-            $prepared = $this->migrationService->getPreparedVersions();
+            $executed = $migrationService->getExecutedVersions($phase);
+            $prepared = $migrationService->getPreparedVersions();
 
             $toBeExecuted = array_values(array_diff($prepared, $executed));
             $executedNotPresent = array_values(array_diff($executed, $prepared));
