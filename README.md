@@ -39,6 +39,7 @@ two_phase_migrations:
     # excluded_tables: ['my_tmp_table']
     # template_file_path: '%kernel.project_dir%/migrations/my-template.txt'
     # template_indent: "\t\t"
+    # lock_timeout_seconds: 300 # how long migration:run waits for a lock held by a parallel run before failing
 ```
 
 The bundle requires `symfony/http-kernel` ^6.4+.
@@ -74,6 +75,7 @@ services:
         $excludedTables: ['my_tmp_table'] # migration table ($migrationTableName) is always added to excluded tables automatically
         $templateFilePath: "%kernel.project_dir%/migrations/my-template.txt" # customizable according to your coding style
         $templateIndent: "\t\t" # defaults to spaces
+        $lockTimeoutSeconds: 300 # how long migration:run waits for a lock held by a parallel run before failing
 ```
 </details>
 
@@ -82,6 +84,7 @@ services:
 #### Initialization:
 
 After installation, you need to create `migration` table in your database. It is safe to run it even when the table was already initialized.
+When upgrading from `1.x`, running it once also upgrades the existing table to the new schema (it makes `finished_at` nullable, see [Concurrency & execution safety](#concurrency--execution-safety)). Only that single column is altered, so it is safe to run against a populated table.
 
 ```bash
 $ bin/console migration:init
@@ -213,6 +216,41 @@ $ bin/console migration:run both
 [info] Migration execution completed (phase both)
 ```
 
+### Concurrency & execution safety
+
+`migration:run` is designed to be **safe to run multiple times and in parallel** (e.g. during a rolling deployment where several instances may start the command at once). "Safe" here means it will never silently corrupt your database — not that every invocation finishes the work. Two mechanisms provide this:
+
+#### Parallel runs are serialized by a database lock
+
+Before doing anything, `migration:run` acquires a database-level lock, so only one run executes migrations at a time:
+
+- **MySQL / MariaDB** – a named lock via `GET_LOCK()` / `RELEASE_LOCK()`
+- **PostgreSQL** – a session-level advisory lock via `pg_try_advisory_lock()` / `pg_advisory_unlock()`
+- **other platforms (incl. SQLite)** – no-op (SQLite already serializes writers at the filesystem level)
+
+A parallel run waits up to `lock_timeout_seconds` (default `300`) for the lock and then proceeds once the holder finishes. If the timeout is exceeded, it aborts with exit code `2` instead of running concurrently. The lock is bound to the connection session, so it is released automatically if a runner is killed.
+
+#### Interrupted migrations block all further runs until resolved
+
+Each migration is recorded in two steps: a row with `started_at` (and `finished_at = NULL`) is committed **before** the migration body runs, and `finished_at` is set **after** it succeeds. If a runner is killed mid-migration, a `finished_at = NULL` row is left behind. This start marker is intentionally written outside any transaction, so it relies on the connection committing it immediately (autocommit, the Doctrine default); the detection guarantee does not hold for connections configured with `auto_commit: false`.
+
+Because such a migration may be only partially applied, **every subsequent `migration:run` fails loudly** (exit code `1`) instead of re-executing potentially non-idempotent SQL:
+
+```bash
+$ bin/console migration:run before
+
+# example output:
+[info] Starting migration execution (phase before)
+[error] Migration execution aborted, found 1 unfinished migration(s) from a previously interrupted run, manual resolution is required
+```
+
+To recover, inspect the database to determine what the interrupted migration actually applied, then resolve the `finished_at = NULL` row in the migration table manually:
+
+- delete the row to re-run the migration from scratch (only safe if nothing was applied or the migration is idempotent), or
+- set its `finished_at` to mark it as completed (if you verified everything was applied or finished it by hand).
+
+`migration:run` exit codes: `0` success, `1` unfinished migration found (manual resolution required), `2` lock could not be acquired, `3` migration table missing or not upgraded (run `migration:init`). `migration:check` also reports unfinished migrations (and adds `8` to its exit code bitmask).
+
 ### Advanced usage
 
 #### Run custom code for each executed query:
@@ -248,6 +286,8 @@ Migration table has `started_at` and `finished_at` columns with datetime data wi
 But those columns are declared as VARCHARs by default, because there is [no microsecond support in doctrine/dbal](https://github.com/doctrine/dbal/issues/2873) yet.
 That may complicate datetime manipulations (like duration calculation).
 You can adjust the structure to your needs (e.g. use `DATETIME(6)` for MySQL) manually in some migration.
+
+`finished_at` is nullable: a `NULL` value marks a migration that was started but never finished (see [Concurrency & execution safety](#concurrency--execution-safety)).
 
 ```
 +----------------+--------+-----------------------------+---------------------------+

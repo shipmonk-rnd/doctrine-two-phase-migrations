@@ -5,9 +5,12 @@ namespace ShipMonk\Doctrine\Migration;
 use LogicException;
 use function is_dir;
 use function is_file;
+use function max;
 
 class MigrationConfig
 {
+
+    private const DEFAULT_LOCK_TIMEOUT_SECONDS = 300;
 
     private string $migrationsDir;
 
@@ -26,6 +29,8 @@ class MigrationConfig
 
     private string $templateIndent;
 
+    private int $lockTimeoutSeconds;
+
     /**
      * @param string[]|null $excludedTables
      */
@@ -37,6 +42,7 @@ class MigrationConfig
         ?array $excludedTables = null,
         ?string $templateFilePath = null,
         ?string $templateIndent = null,
+        ?int $lockTimeoutSeconds = null,
     )
     {
         $templateFilePathToUse = $templateFilePath ?? __DIR__ . '/template/migration.txt';
@@ -57,6 +63,7 @@ class MigrationConfig
         $this->excludedTables[] = $this->getMigrationTableName();
         $this->templateFilePath = $templateFilePathToUse;
         $this->templateIndent = $templateIndent ?? '        ';
+        $this->lockTimeoutSeconds = max(1, $lockTimeoutSeconds ?? self::DEFAULT_LOCK_TIMEOUT_SECONDS);
     }
 
     public function getMigrationsDirectory(): string
@@ -95,6 +102,11 @@ class MigrationConfig
     public function getTemplateIndent(): string
     {
         return $this->templateIndent;
+    }
+
+    public function getLockTimeoutSeconds(): int
+    {
+        return $this->lockTimeoutSeconds;
     }
 
 }

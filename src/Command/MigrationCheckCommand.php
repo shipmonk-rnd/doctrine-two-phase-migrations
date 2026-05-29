@@ -10,6 +10,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use function array_diff;
+use function array_map;
 use function array_values;
 use function count;
 use function implode;
@@ -22,6 +23,7 @@ class MigrationCheckCommand extends Command
 
     public const NAME = 'migration:check';
 
+    public const EXIT_INCOMPLETE_MIGRATION = 8;
     public const EXIT_ENTITIES_NOT_SYNCED = 4;
     public const EXIT_UNKNOWN_MIGRATION = 2;
     public const EXIT_AWAITING_MIGRATION = 1;
@@ -45,6 +47,7 @@ class MigrationCheckCommand extends Command
         $logger->info('Starting migration check');
 
         $exitCode = self::EXIT_OK;
+        $exitCode |= $this->checkIncompleteMigrations($logger);
         $exitCode |= $this->checkMigrationsExecuted($logger);
         $exitCode |= $this->checkEntitiesSyncedWithDatabase($logger);
 
@@ -54,6 +57,26 @@ class MigrationCheckCommand extends Command
         ]);
 
         return $exitCode;
+    }
+
+    private function checkIncompleteMigrations(LoggerInterface $logger): int
+    {
+        $incomplete = $this->migrationService->getIncompleteMigrations();
+
+        if (count($incomplete) === 0) {
+            return self::EXIT_OK;
+        }
+
+        $logger->error('Found {migrationIncompleteCount} unfinished migration(s) from a previously interrupted run, manual resolution is required: {migrationIncompleteList}', [
+            'migrationIncompleteCount' => count($incomplete),
+            'migrationIncomplete' => $incomplete,
+            'migrationIncompleteList' => implode(', ', array_map(
+                static fn (array $migration): string => $migration['version'] . ' (phase ' . $migration['phase'] . ')',
+                $incomplete,
+            )),
+        ]);
+
+        return self::EXIT_INCOMPLETE_MIGRATION;
     }
 
     private function checkEntitiesSyncedWithDatabase(LoggerInterface $logger): int

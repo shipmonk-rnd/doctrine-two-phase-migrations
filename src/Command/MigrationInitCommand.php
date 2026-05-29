@@ -4,6 +4,7 @@ namespace ShipMonk\Doctrine\Migration\Command;
 
 use Psr\Log\LoggerInterface;
 use ShipMonk\Doctrine\Migration\MigrationService;
+use ShipMonk\Doctrine\Migration\MigrationTableState;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -38,17 +39,19 @@ class MigrationInitCommand extends Command
             'tableName' => $tableName,
         ]);
 
-        $initialized = $this->migrationService->initializeMigrationTable();
+        $state = $this->migrationService->initializeMigrationTable();
 
-        if ($initialized) {
-            $logger->info('Migration table {tableName} created successfully', [
+        match ($state) {
+            MigrationTableState::Created => $logger->info('Migration table {tableName} created successfully', [
                 'tableName' => $tableName,
-            ]);
-        } else {
-            $logger->notice('Migration table {tableName} already exists', [
+            ]),
+            MigrationTableState::Upgraded => $logger->info('Migration table {tableName} upgraded successfully', [
                 'tableName' => $tableName,
-            ]);
-        }
+            ]),
+            MigrationTableState::AlreadyUpToDate => $logger->notice('Migration table {tableName} already exists', [
+                'tableName' => $tableName,
+            ]),
+        };
 
         return 0;
     }

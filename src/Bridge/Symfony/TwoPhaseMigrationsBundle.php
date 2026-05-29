@@ -32,6 +32,7 @@ class TwoPhaseMigrationsBundle extends AbstractBundle
             ->end()
             ->scalarNode('template_file_path')->defaultNull()->end()
             ->scalarNode('template_indent')->defaultNull()->end()
+            ->integerNode('lock_timeout_seconds')->defaultNull()->end()
             ->end();
     }
 
@@ -44,6 +45,7 @@ class TwoPhaseMigrationsBundle extends AbstractBundle
      *     excluded_tables: list<string>,
      *     template_file_path: ?string,
      *     template_indent: ?string,
+     *     lock_timeout_seconds: ?int,
      * } $config
      */
     public function loadExtension( // @phpstan-ignore method.childParameterType, method.childParameterType
@@ -63,6 +65,7 @@ class TwoPhaseMigrationsBundle extends AbstractBundle
                 '$excludedTables' => $config['excluded_tables'],
                 '$templateFilePath' => $config['template_file_path'],
                 '$templateIndent' => $config['template_indent'],
+                '$lockTimeoutSeconds' => $config['lock_timeout_seconds'],
             ]);
 
         $services->set(MigrationService::class)

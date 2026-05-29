@@ -5,6 +5,7 @@ namespace ShipMonk\Doctrine\Migration\Command;
 use PHPUnit\Framework\TestCase;
 use ShipMonk\Doctrine\Migration\MigrationConfig;
 use ShipMonk\Doctrine\Migration\MigrationService;
+use ShipMonk\Doctrine\Migration\MigrationTableState;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 
@@ -19,7 +20,7 @@ class MigrationInitCommandTest extends TestCase
         $migrationService = $this->createMock(MigrationService::class);
         $migrationService->expects(self::once())
             ->method('initializeMigrationTable')
-            ->willReturn(true);
+            ->willReturn(MigrationTableState::Created);
         $migrationService->method('getConfig')->willReturn($config);
 
         $logger = new TestLogger();
@@ -34,6 +35,28 @@ class MigrationInitCommandTest extends TestCase
         self::assertTrue($logger->hasMessage('Migration table {tableName} created successfully'));
     }
 
+    public function testInitUpgraded(): void
+    {
+        $config = $this->createMock(MigrationConfig::class);
+        $config->method('getMigrationTableName')->willReturn('migration');
+
+        $migrationService = $this->createMock(MigrationService::class);
+        $migrationService->expects(self::once())
+            ->method('initializeMigrationTable')
+            ->willReturn(MigrationTableState::Upgraded);
+        $migrationService->method('getConfig')->willReturn($config);
+
+        $logger = new TestLogger();
+
+        $output = new BufferedOutput();
+        $command = new MigrationInitCommand($migrationService, $logger);
+        $exitCode = $command->run(new ArrayInput([]), $output);
+
+        self::assertSame(0, $exitCode);
+
+        self::assertTrue($logger->hasMessage('Migration table {tableName} upgraded successfully'));
+    }
+
     public function testInitAlreadyExists(): void
     {
         $config = $this->createMock(MigrationConfig::class);
@@ -42,7 +65,7 @@ class MigrationInitCommandTest extends TestCase
         $migrationService = $this->createMock(MigrationService::class);
         $migrationService->expects(self::once())
             ->method('initializeMigrationTable')
-            ->willReturn(false);
+            ->willReturn(MigrationTableState::AlreadyUpToDate);
         $migrationService->method('getConfig')->willReturn($config);
 
         $logger = new TestLogger();
