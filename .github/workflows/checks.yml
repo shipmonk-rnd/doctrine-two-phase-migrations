@@ -19,7 +19,7 @@ jobs:
                 name: Setup PHP
                 uses: shivammathur/setup-php@v2
                 with:
-                    php-version: 8.4
+                    php-version: 8.5
             -
                 name: Install dependencies
                 run: composer install --no-progress --prefer-dist --no-interaction
@@ -29,6 +29,7 @@ jobs:
                 run: composer check
 
 
+    # SQLite needs no service container; this job carries the broad PHP × dependency compatibility matrix.
     tests:
         runs-on: ubuntu-latest
         strategy:
@@ -45,11 +46,92 @@ jobs:
                 uses: shivammathur/setup-php@v2
                 with:
                     php-version: ${{ matrix.php-version }}
+                    extensions: pdo_sqlite
             -
                 name: Update dependencies
                 run: composer update --no-progress --${{ matrix.dependency-version }} --prefer-dist --no-interaction --no-suggest
 
             -
-                name: Run tests
+                name: Run tests against SQLite
                 run: composer check:tests
+
+    # MySQL/PostgreSQL compatibility tracks the DBAL version (the dependency-version axis), so these run
+    # on a single representative PHP version and only start the one database they actually need.
+    tests-mysql:
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                dependency-version: [ prefer-lowest, prefer-stable ]
+        services:
+            mysql:
+                image: mysql:8.4
+                env:
+                    MYSQL_ROOT_PASSWORD: root
+                    MYSQL_DATABASE: migrations
+                ports:
+                    - 3306:3306
+                options: >-
+                    --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+                    --health-interval=10s
+                    --health-timeout=5s
+                    --health-retries=10
+        steps:
+            -
+                name: Checkout code
+                uses: actions/checkout@v6
+            -
+                name: Setup PHP
+                uses: shivammathur/setup-php@v2
+                with:
+                    php-version: 8.5
+                    extensions: pdo_mysql
+            -
+                name: Update dependencies
+                run: composer update --no-progress --${{ matrix.dependency-version }} --prefer-dist --no-interaction --no-suggest
+
+            -
+                name: Run tests against MySQL
+                run: composer check:tests
+                env:
+                    DATABASE_URL: 'pdo-mysql://root:root@127.0.0.1:3306/migrations'
+
+    tests-pgsql:
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                dependency-version: [ prefer-lowest, prefer-stable ]
+        services:
+            postgres:
+                image: postgres:16
+                env:
+                    POSTGRES_PASSWORD: postgres
+                    POSTGRES_DB: migrations
+                ports:
+                    - 5432:5432
+                options: >-
+                    --health-cmd="pg_isready -U postgres"
+                    --health-interval=10s
+                    --health-timeout=5s
+                    --health-retries=10
+        steps:
+            -
+                name: Checkout code
+                uses: actions/checkout@v6
+            -
+                name: Setup PHP
+                uses: shivammathur/setup-php@v2
+                with:
+                    php-version: 8.5
+                    extensions: pdo_pgsql
+            -
+                name: Update dependencies
+                run: composer update --no-progress --${{ matrix.dependency-version }} --prefer-dist --no-interaction --no-suggest
+
+            -
+                name: Run tests against PostgreSQL
+                run: composer check:tests
+                env:
+                    DATABASE_URL: 'pdo-pgsql://postgres:postgres@127.0.0.1:5432/migrations'
 
