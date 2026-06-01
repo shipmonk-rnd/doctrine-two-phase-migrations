@@ -19,7 +19,7 @@ jobs:
                 name: Setup PHP
                 uses: shivammathur/setup-php@v2
                 with:
-                    php-version: 8.4
+                    php-version: 8.5
             -
                 name: Install dependencies
                 run: composer install --no-progress --prefer-dist --no-interaction
@@ -84,7 +84,7 @@ jobs:
                 name: Setup PHP
                 uses: shivammathur/setup-php@v2
                 with:
-                    php-version: 8.4
+                    php-version: 8.5
                     extensions: pdo_mysql
             -
                 name: Update dependencies
@@ -123,7 +123,7 @@ jobs:
                 name: Setup PHP
                 uses: shivammathur/setup-php@v2
                 with:
-                    php-version: 8.4
+                    php-version: 8.5
                     extensions: pdo_pgsql
             -
                 name: Update dependencies
