@@ -39,6 +39,7 @@ class TwoPhaseMigrationsBundleTest extends TestCase
         self::assertSame([], $config['excluded_tables'] ?? null);
         self::assertNull($config['template_file_path'] ?? null);
         self::assertNull($config['template_indent'] ?? null);
+        self::assertNull($config['lock_timeout_seconds'] ?? null);
     }
 
     public function testConfigurationFull(): void
@@ -51,12 +52,14 @@ class TwoPhaseMigrationsBundleTest extends TestCase
             'excluded_tables' => ['tmp_table'],
             'template_file_path' => __DIR__ . '/../../../src/template/migration.txt',
             'template_indent' => "\t\t",
+            'lock_timeout_seconds' => 60,
         ]);
 
         self::assertSame('custom_table', $config['migration_table_name'] ?? null);
         self::assertSame('App\\Migrations', $config['migration_class_namespace'] ?? null);
         self::assertSame('Version', $config['migration_class_prefix'] ?? null);
         self::assertSame(['tmp_table'], $config['excluded_tables'] ?? null);
+        self::assertSame(60, $config['lock_timeout_seconds'] ?? null);
     }
 
     public function testConfigurationMissingRequired(): void

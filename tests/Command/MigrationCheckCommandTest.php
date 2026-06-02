@@ -48,4 +48,28 @@ class MigrationCheckCommandTest extends TestCase
         self::assertTrue($logger->hasMessage('Migration check completed'));
     }
 
+    public function testCheckReportsIncompleteMigrations(): void
+    {
+        $config = $this->createMock(MigrationConfig::class);
+        $config->method('getMigrationsDirectory')->willReturn('/tmp/migrations');
+
+        $migrationService = $this->createMock(MigrationService::class);
+        $migrationService->method('getIncompleteMigrations')->willReturn([
+            ['version' => 'v1', 'phase' => 'before', 'startedAt' => '2023-01-01 00:00:00.000000'],
+        ]);
+        $migrationService->method('getExecutedVersions')->willReturn(['fakeversion']);
+        $migrationService->method('getPreparedVersions')->willReturn(['fakeversion']);
+        $migrationService->method('generateDiffSqls')->willReturn([]);
+        $migrationService->method('getConfig')->willReturn($config);
+
+        $logger = new TestLogger();
+
+        $output = new BufferedOutput();
+        $command = new MigrationCheckCommand($migrationService, $logger);
+        $exitCode = $command->run(new ArrayInput([]), $output);
+
+        self::assertSame(MigrationCheckCommand::EXIT_INCOMPLETE_MIGRATION, $exitCode);
+        self::assertTrue($logger->hasMessage('Found {migrationIncompleteCount} unfinished migration(s) from a previously interrupted run, manual resolution is required: {migrationIncompleteList}'));
+    }
+
 }

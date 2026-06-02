@@ -4,13 +4,17 @@ namespace ShipMonk\Doctrine\Migration\Command;
 
 use LogicException;
 use Psr\Log\LoggerInterface;
+use ShipMonk\Doctrine\Migration\IncompleteMigrationException;
+use ShipMonk\Doctrine\Migration\MigrationLockException;
 use ShipMonk\Doctrine\Migration\MigrationPhase;
 use ShipMonk\Doctrine\Migration\MigrationService;
+use ShipMonk\Doctrine\Migration\MigrationTableNotInitializedException;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Throwable;
 use function array_map;
 use function count;
 use function in_array;
@@ -27,6 +31,11 @@ class MigrationRunCommand extends Command
 
     public const ARGUMENT_PHASE = 'phase';
     public const PHASE_BOTH = 'both';
+
+    public const EXIT_OK = 0;
+    public const EXIT_INCOMPLETE_MIGRATION = 1;
+    public const EXIT_LOCK_NOT_ACQUIRED = 2;
+    public const EXIT_TABLE_NOT_INITIALIZED = 3;
 
     public function __construct(
         private readonly MigrationService $migrationService,
@@ -65,19 +74,61 @@ class MigrationRunCommand extends Command
             'migrationPhases' => array_map(static fn (MigrationPhase $phase): string => $phase->value, $phases),
         ]);
 
-        $migratedSomething = $this->executeMigrations($logger, $phases);
+        // serialize the whole run across processes so parallel invocations are safe
+        try {
+            $this->migrationService->acquireLock();
+        } catch (MigrationLockException $e) {
+            $logger->error('Migration execution aborted, could not acquire migration lock within {migrationLockTimeoutSeconds} s (another migration run is probably in progress)', [
+                'migrationPhaseArgument' => $phaseArgument,
+                'migrationLockTimeoutSeconds' => $e->timeoutSeconds,
+            ]);
 
-        if (!$migratedSomething) {
-            $logger->notice('No migrations to execute (phase {migrationPhaseArgument})', [
-                'migrationPhaseArgument' => $phaseArgument,
-            ]);
-        } else {
-            $logger->info('Migration execution completed (phase {migrationPhaseArgument})', [
-                'migrationPhaseArgument' => $phaseArgument,
-            ]);
+            return self::EXIT_LOCK_NOT_ACQUIRED;
         }
 
-        return 0;
+        try {
+            $this->migrationService->assertMigrationTableUpToDate();
+            $this->migrationService->assertNoIncompleteMigrations();
+
+            $migratedSomething = $this->executeMigrations($logger, $phases);
+
+            if (!$migratedSomething) {
+                $logger->notice('No migrations to execute (phase {migrationPhaseArgument})', [
+                    'migrationPhaseArgument' => $phaseArgument,
+                ]);
+            } else {
+                $logger->info('Migration execution completed (phase {migrationPhaseArgument})', [
+                    'migrationPhaseArgument' => $phaseArgument,
+                ]);
+            }
+
+            return self::EXIT_OK;
+        } catch (MigrationTableNotInitializedException $e) {
+            $logger->error('Migration execution aborted, migration table {migrationTableName} is not initialized, run the migration:init command first', [
+                'migrationPhaseArgument' => $phaseArgument,
+                'migrationTableName' => $e->tableName,
+                'migrationError' => $e->getMessage(),
+            ]);
+
+            return self::EXIT_TABLE_NOT_INITIALIZED;
+        } catch (IncompleteMigrationException $e) {
+            $logger->error('Migration execution aborted, found {migrationIncompleteCount} unfinished migration(s) from a previously interrupted run, manual resolution is required', [
+                'migrationPhaseArgument' => $phaseArgument,
+                'migrationIncompleteCount' => count($e->incompleteMigrations),
+                'migrationIncomplete' => $e->incompleteMigrations,
+            ]);
+
+            return self::EXIT_INCOMPLETE_MIGRATION;
+        } finally {
+            // a failed release must not mask the run's outcome; the session lock auto-releases on connection close
+            try {
+                $this->migrationService->releaseLock();
+            } catch (Throwable $e) {
+                $logger->warning('Failed to release the migration lock, it will be released when the database connection is closed ({migrationError})', [
+                    'migrationError' => $e->getMessage(),
+                ]);
+            }
+        }
     }
 
     /**
