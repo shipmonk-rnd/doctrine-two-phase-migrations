@@ -6,8 +6,10 @@ use DateTimeImmutable;
 use DirectoryIterator;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\ComparatorConfig;
+use Doctrine\DBAL\Schema\Exception\TableDoesNotExist;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Schema;
+use Doctrine\DBAL\Schema\Table;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 use LogicException;
@@ -263,16 +265,14 @@ class MigrationService
     public function assertMigrationTableUpToDate(): void
     {
         $migrationTableName = $this->config->getMigrationTableName();
-        $schemaManager = $this->connection->createSchemaManager();
+        $table = $this->findMigrationTable();
 
-        if (!$schemaManager->tablesExist([$migrationTableName])) {
+        if ($table === null) {
             throw new MigrationTableNotInitializedException($migrationTableName, sprintf(
                 'Migration table "%s" does not exist. Run the migration:init command before running migrations.',
                 $migrationTableName,
             ));
         }
-
-        $table = $schemaManager->introspectTable($migrationTableName);
 
         if (!$table->hasColumn('finished_at') || $table->getColumn('finished_at')->getNotnull()) {
             throw new MigrationTableNotInitializedException($migrationTableName, sprintf(
@@ -280,6 +280,19 @@ class MigrationService
                     . 'Run the migration:init command to upgrade it before running migrations.',
                 $migrationTableName,
             ));
+        }
+    }
+
+    /**
+     * Introspects the migration table directly instead of asking for the list of tables, since applications
+     * commonly hide the migration table from schema listings (Doctrine's schema_filter) to keep it out of diffs.
+     */
+    private function findMigrationTable(): ?Table
+    {
+        try {
+            return $this->connection->createSchemaManager()->introspectTable($this->config->getMigrationTableName());
+        } catch (TableDoesNotExist $e) {
+            return null;
         }
     }
 
@@ -345,9 +358,10 @@ class MigrationService
     public function initializeMigrationTable(): MigrationTableState
     {
         $migrationTableName = $this->config->getMigrationTableName();
+        $existingTable = $this->findMigrationTable();
 
-        if ($this->connection->createSchemaManager()->tablesExist([$migrationTableName])) {
-            return $this->upgradeMigrationTable($migrationTableName);
+        if ($existingTable !== null) {
+            return $this->upgradeMigrationTable($existingTable);
         }
 
         $primaryKey = PrimaryKeyConstraint::editor()
@@ -374,17 +388,16 @@ class MigrationService
      * Only this single column is touched, so no unrelated schema differences can be applied.
      */
     private function upgradeMigrationTable(
-        string $migrationTableName,
+        Table $currentTable,
     ): MigrationTableState
     {
-        $schemaManager = $this->connection->createSchemaManager();
-        $currentTable = $schemaManager->introspectTable($migrationTableName);
-
         if (!$currentTable->hasColumn('finished_at') || !$currentTable->getColumn('finished_at')->getNotnull()) {
             return MigrationTableState::AlreadyUpToDate;
         }
 
-        $desiredTable = $schemaManager->introspectTable($migrationTableName);
+        $schemaManager = $this->connection->createSchemaManager();
+
+        $desiredTable = clone $currentTable;
         $desiredTable->modifyColumn('finished_at', ['notnull' => false]);
 
         $comparatorConfig = (new ComparatorConfig())->withReportModifiedIndexes(false);

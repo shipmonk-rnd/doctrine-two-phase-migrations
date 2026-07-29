@@ -373,6 +373,46 @@ class MigrationServiceTest extends TestCase
         $service->assertNoIncompleteMigrations();
     }
 
+    public function testMigrationTableIsDetectedDespiteSchemaAssetsFilter(): void
+    {
+        [$entityManager] = $this->createEntityManagerAndLogger();
+        $service = $this->createMigrationService($entityManager);
+        $connection = $entityManager->getConnection();
+        $migrationTableName = $service->getConfig()->getMigrationTableName();
+
+        // applications commonly hide the migration table from schema listings to keep it out of ORM diffs
+        $connection->getConfiguration()->setSchemaAssetsFilter(
+            static fn (string $tableName): bool => $tableName !== $migrationTableName,
+        );
+
+        $connection->executeStatement(
+            "CREATE TABLE {$migrationTableName} (version VARCHAR(20) NOT NULL, phase VARCHAR(10) NOT NULL, "
+                . 'started_at VARCHAR(30) NOT NULL, finished_at VARCHAR(30) NOT NULL, PRIMARY KEY (version, phase))',
+        );
+
+        // must upgrade the hidden table instead of attempting to create it again
+        self::assertSame(MigrationTableState::Upgraded, $service->initializeMigrationTable());
+        self::assertSame(MigrationTableState::AlreadyUpToDate, $service->initializeMigrationTable());
+
+        $service->assertMigrationTableUpToDate();
+    }
+
+    public function testMigrationTableIsCreatedDespiteSchemaAssetsFilter(): void
+    {
+        [$entityManager] = $this->createEntityManagerAndLogger();
+        $service = $this->createMigrationService($entityManager);
+        $migrationTableName = $service->getConfig()->getMigrationTableName();
+
+        $entityManager->getConnection()->getConfiguration()->setSchemaAssetsFilter(
+            static fn (string $tableName): bool => $tableName !== $migrationTableName,
+        );
+
+        self::assertSame(MigrationTableState::Created, $service->initializeMigrationTable());
+        self::assertSame(MigrationTableState::AlreadyUpToDate, $service->initializeMigrationTable());
+
+        $service->assertMigrationTableUpToDate();
+    }
+
     public function testAssertMigrationTableUpToDateThrowsWhenTableMissing(): void
     {
         [$entityManager] = $this->createEntityManagerAndLogger();
