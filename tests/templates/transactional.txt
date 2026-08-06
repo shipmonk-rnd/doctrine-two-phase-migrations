@@ -13,6 +13,7 @@ class %className% implements Migration, TransactionalMigration
     public function before(MigrationExecutor $executor): void
     {
         %statements%
+        %statementsBefore%
     }
 
     public function after(MigrationExecutor $executor): void
