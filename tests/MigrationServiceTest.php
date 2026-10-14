@@ -434,7 +434,7 @@ class MigrationServiceTest extends TestCase
         $connection = $entityManager->getConnection();
         $migrationTableName = $service->getConfig()->getMigrationTableName();
 
-        // pre-2.0 schema with finished_at NOT NULL
+        // pre-0.8 schema with finished_at NOT NULL
         $connection->executeStatement(
             "CREATE TABLE {$migrationTableName} (version VARCHAR(20) NOT NULL, phase VARCHAR(10) NOT NULL, "
                 . 'started_at VARCHAR(30) NOT NULL, finished_at VARCHAR(30) NOT NULL, PRIMARY KEY (version, phase))',
