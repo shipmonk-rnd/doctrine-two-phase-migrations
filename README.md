@@ -264,6 +264,14 @@ Interface of this method mimics interface of `Doctrine\DBAL\Connection::executeQ
 You can implement custom `MigrationAnalyzer` and register it as a service.
 This allows you to alter generated SQLs (e.g. add `ALGORITHM=INSTANT`) and assign them to proper phase.
 
+Each `Statement` the analyzer returns has a phase: `MigrationPhase::BEFORE`, `MigrationPhase::AFTER`, or `null` (undecided).
+The template placeholders reflect that decision:
+- `%statements%` receives undecided statements (this is all statements with the default analyzer)
+- `%statementsBefore%` receives statements the analyzer assigned to the before phase
+- `%statementsAfter%` receives statements the analyzer assigned to the after phase
+
+A custom template must contain a placeholder for every bucket the analyzer produces; generation fails otherwise.
+
 #### Hook to migration execution:
 
 If you pass `Psr\EventDispatcher\EventDispatcherInterface` to `MigrationService`, you can hook into migration execution.

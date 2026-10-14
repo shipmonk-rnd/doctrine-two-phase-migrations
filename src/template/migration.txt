@@ -12,6 +12,7 @@ final class %className% implements Migration
     public function before(MigrationExecutor $executor): void
     {
         %statements%
+        %statementsBefore%
     }
 
     public function after(MigrationExecutor $executor): void

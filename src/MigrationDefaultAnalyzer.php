@@ -14,7 +14,7 @@ class MigrationDefaultAnalyzer implements MigrationAnalyzer
         $result = [];
 
         foreach ($statements as $statement) {
-            $result[] = new Statement($statement, MigrationPhase::BEFORE);
+            $result[] = new Statement($statement, null);
         }
 
         return $result;
