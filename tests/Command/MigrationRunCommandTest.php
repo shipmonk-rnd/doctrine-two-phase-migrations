@@ -6,11 +6,13 @@ use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use ShipMonk\Doctrine\Migration\IncompleteMigrationException;
+use ShipMonk\Doctrine\Migration\MigrationConfig;
 use ShipMonk\Doctrine\Migration\MigrationLockException;
 use ShipMonk\Doctrine\Migration\MigrationPhase;
 use ShipMonk\Doctrine\Migration\MigrationRun;
 use ShipMonk\Doctrine\Migration\MigrationService;
 use ShipMonk\Doctrine\Migration\MigrationTableNotInitializedException;
+use ShipMonk\Doctrine\Migration\MigrationTableState;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Tester\CommandTester;
@@ -21,6 +23,7 @@ class MigrationRunCommandTest extends TestCase
     public function testBasicRun(): void
     {
         $migrationService = $this->createMock(MigrationService::class);
+        $migrationService->method('ensureMigrationTableUpToDate')->willReturn(MigrationTableState::AlreadyUpToDate);
         $migrationService->expects(self::exactly(2))
             ->method('getExecutedVersions')
             ->willReturnOnConsecutiveCalls(['fakeversion' => 'fakeversion'], []);
@@ -49,6 +52,7 @@ class MigrationRunCommandTest extends TestCase
     public function testRunBoth(): void
     {
         $migrationService = $this->createMock(MigrationService::class);
+        $migrationService->method('ensureMigrationTableUpToDate')->willReturn(MigrationTableState::AlreadyUpToDate);
         $migrationService->expects(self::exactly(2))
             ->method('getExecutedVersions')
             ->willReturn([]);
@@ -104,7 +108,7 @@ class MigrationRunCommandTest extends TestCase
     public function testTableNotInitializedReturnsExitCode(): void
     {
         $migrationService = $this->createMock(MigrationService::class);
-        $migrationService->method('assertMigrationTableUpToDate')
+        $migrationService->method('ensureMigrationTableUpToDate')
             ->willThrowException(new MigrationTableNotInitializedException('migration', 'run migration:init'));
         $migrationService->expects(self::once())->method('releaseLock');
         $migrationService->expects(self::never())->method('executeMigration');
@@ -117,11 +121,31 @@ class MigrationRunCommandTest extends TestCase
         self::assertTrue($logger->hasMessage('Migration execution aborted, migration table {migrationTableName} is not initialized, run the migration:init command first'));
     }
 
+    public function testOutdatedTableIsUpgradedBeforeMigrating(): void
+    {
+        $migrationService = $this->createMock(MigrationService::class);
+        $migrationService->expects(self::once())
+            ->method('ensureMigrationTableUpToDate')
+            ->willReturn(MigrationTableState::Upgraded);
+        $migrationService->method('getConfig')
+            ->willReturn(new MigrationConfig(__DIR__, 'migration'));
+        $migrationService->method('getExecutedVersions')->willReturn([]);
+        $migrationService->method('getPreparedVersions')->willReturn([]);
+
+        $logger = new TestLogger();
+        $command = new MigrationRunCommand($migrationService, $logger);
+        $exitCode = $this->runPhase($command, MigrationPhase::BEFORE->value);
+
+        self::assertSame(MigrationRunCommand::EXIT_OK, $exitCode);
+        self::assertTrue($logger->hasMessage('Migration table {migrationTableName} upgraded to the current schema (finished_at is now nullable)'));
+    }
+
     public function testIncompleteMigrationReturnsExitCode(): void
     {
         $incomplete = [['version' => 'v1', 'phase' => 'before', 'startedAt' => '2023-01-01 00:00:00.000000']];
 
         $migrationService = $this->createMock(MigrationService::class);
+        $migrationService->method('ensureMigrationTableUpToDate')->willReturn(MigrationTableState::AlreadyUpToDate);
         $migrationService->method('assertNoIncompleteMigrations')
             ->willThrowException(new IncompleteMigrationException($incomplete, 'incomplete migration detected'));
         $migrationService->expects(self::once())->method('releaseLock'); // lock acquired, must be released
@@ -138,6 +162,7 @@ class MigrationRunCommandTest extends TestCase
     public function testReleaseLockFailureDoesNotMaskResult(): void
     {
         $migrationService = $this->createMock(MigrationService::class);
+        $migrationService->method('ensureMigrationTableUpToDate')->willReturn(MigrationTableState::AlreadyUpToDate);
         $migrationService->method('getExecutedVersions')->willReturn([]);
         $migrationService->method('getPreparedVersions')->willReturn([]);
         $migrationService->method('releaseLock')

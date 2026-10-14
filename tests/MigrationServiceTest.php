@@ -394,7 +394,7 @@ class MigrationServiceTest extends TestCase
         self::assertSame(MigrationTableState::Upgraded, $service->initializeMigrationTable());
         self::assertSame(MigrationTableState::AlreadyUpToDate, $service->initializeMigrationTable());
 
-        $service->assertMigrationTableUpToDate();
+        self::assertSame(MigrationTableState::AlreadyUpToDate, $service->ensureMigrationTableUpToDate());
     }
 
     public function testMigrationTableIsCreatedDespiteSchemaAssetsFilter(): void
@@ -410,16 +410,16 @@ class MigrationServiceTest extends TestCase
         self::assertSame(MigrationTableState::Created, $service->initializeMigrationTable());
         self::assertSame(MigrationTableState::AlreadyUpToDate, $service->initializeMigrationTable());
 
-        $service->assertMigrationTableUpToDate();
+        self::assertSame(MigrationTableState::AlreadyUpToDate, $service->ensureMigrationTableUpToDate());
     }
 
-    public function testAssertMigrationTableUpToDateThrowsWhenTableMissing(): void
+    public function testEnsureMigrationTableUpToDateThrowsWhenTableMissing(): void
     {
         [$entityManager] = $this->createEntityManagerAndLogger();
         $service = $this->createMigrationService($entityManager);
 
         try {
-            $service->assertMigrationTableUpToDate();
+            $service->ensureMigrationTableUpToDate();
             self::fail('Expected MigrationTableNotInitializedException');
         } catch (MigrationTableNotInitializedException $e) {
             self::assertSame('migration', $e->tableName);
@@ -427,7 +427,7 @@ class MigrationServiceTest extends TestCase
         }
     }
 
-    public function testAssertMigrationTableUpToDateThrowsOnOutdatedSchema(): void
+    public function testEnsureMigrationTableUpToDateUpgradesOutdatedSchema(): void
     {
         [$entityManager] = $this->createEntityManagerAndLogger();
         $service = $this->createMigrationService($entityManager);
@@ -439,20 +439,21 @@ class MigrationServiceTest extends TestCase
             "CREATE TABLE {$migrationTableName} (version VARCHAR(20) NOT NULL, phase VARCHAR(10) NOT NULL, "
                 . 'started_at VARCHAR(30) NOT NULL, finished_at VARCHAR(30) NOT NULL, PRIMARY KEY (version, phase))',
         );
+        $connection->insert($migrationTableName, [
+            'version' => 'v1',
+            'phase' => 'before',
+            'started_at' => '2023-01-01 00:00:00.000000',
+            'finished_at' => '2023-01-01 00:00:01.000000',
+        ]);
 
-        try {
-            $service->assertMigrationTableUpToDate();
-            self::fail('Expected MigrationTableNotInitializedException');
-        } catch (MigrationTableNotInitializedException $e) {
-            self::assertStringContainsString('out of date', $e->getMessage());
-        }
+        self::assertSame(MigrationTableState::Upgraded, $service->ensureMigrationTableUpToDate());
+        self::assertFalse($connection->createSchemaManager()->introspectTable($migrationTableName)->getColumn('finished_at')->getNotnull());
+        self::assertSame(['v1' => 'v1'], $service->getExecutedVersions(MigrationPhase::BEFORE));
 
-        // after init upgrades the schema, the assertion passes
-        $service->initializeMigrationTable();
-        $service->assertMigrationTableUpToDate();
+        self::assertSame(MigrationTableState::AlreadyUpToDate, $service->ensureMigrationTableUpToDate());
     }
 
-    public function testAssertMigrationTableUpToDateThrowsWhenFinishedAtColumnMissing(): void
+    public function testEnsureMigrationTableUpToDateThrowsWhenFinishedAtColumnMissing(): void
     {
         [$entityManager] = $this->createEntityManagerAndLogger();
         $service = $this->createMigrationService($entityManager);
@@ -466,11 +467,10 @@ class MigrationServiceTest extends TestCase
         );
 
         try {
-            $service->assertMigrationTableUpToDate();
+            $service->ensureMigrationTableUpToDate();
             self::fail('Expected MigrationTableNotInitializedException');
         } catch (MigrationTableNotInitializedException $e) {
-            self::assertStringContainsString('out of date', $e->getMessage());
-            self::assertStringContainsString('migration:init', $e->getMessage());
+            self::assertStringContainsString('has no finished_at column', $e->getMessage());
         }
     }
 

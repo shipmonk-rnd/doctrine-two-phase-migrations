@@ -3,7 +3,7 @@
 namespace ShipMonk\Doctrine\Migration;
 
 /**
- * Outcome of {@see MigrationService::initializeMigrationTable()}.
+ * Outcome of {@see MigrationService::initializeMigrationTable()} and {@see MigrationService::ensureMigrationTableUpToDate()}.
  *
  * @api
  */
