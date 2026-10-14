@@ -384,7 +384,7 @@ class MigrationService
     }
 
     /**
-     * Idempotently makes finished_at nullable on an already existing migration table (upgrade from < 2.0).
+     * Idempotently makes finished_at nullable on an already existing migration table (upgrade from < 0.8).
      * Only this single column is touched, so no unrelated schema differences can be applied.
      */
     private function upgradeMigrationTable(
