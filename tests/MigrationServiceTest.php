@@ -2,10 +2,12 @@
 
 namespace ShipMonk\Doctrine\Migration;
 
+use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Schema\Exception\ColumnDoesNotExist;
 use Doctrine\ORM\EntityManagerInterface;
 use LogicException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use ShipMonk\Doctrine\Migration\Event\MigrationExecutionStartedEvent;
@@ -452,6 +454,59 @@ class MigrationServiceTest extends TestCase
         self::assertSame(['v1' => 'v1'], $service->getExecutedVersions(MigrationPhase::BEFORE));
 
         self::assertSame(MigrationTableState::AlreadyUpToDate, $service->ensureMigrationTableUpToDate());
+    }
+
+    /**
+     * @param array<string, string> $row
+     */
+    #[DataProvider('provideMySqlCustomizedFinishedAtColumns')]
+    public function testMySqlUpgradeKeepsCustomizedFinishedAtColumn(
+        string $finishedAtDefinition,
+        string $expectedDefinition,
+        array $row,
+    ): void
+    {
+        [$entityManager] = $this->createEntityManagerAndLogger();
+        $connection = $entityManager->getConnection();
+
+        if (!$connection->getDatabasePlatform() instanceof AbstractMySQLPlatform) {
+            self::markTestSkipped('MySQL specific upgrade path');
+        }
+
+        $service = $this->createMigrationService($entityManager);
+        $migrationTableName = $service->getConfig()->getMigrationTableName();
+
+        $connection->executeStatement(
+            "CREATE TABLE {$migrationTableName} (version VARCHAR(20) NOT NULL, phase VARCHAR(10) NOT NULL, "
+                . "started_at DATETIME(6) NOT NULL, finished_at {$finishedAtDefinition}, PRIMARY KEY (version, phase))",
+        );
+        $connection->insert($migrationTableName, $row);
+
+        self::assertSame(MigrationTableState::Upgraded, $service->ensureMigrationTableUpToDate());
+        self::assertSame(MigrationTableState::AlreadyUpToDate, $service->ensureMigrationTableUpToDate());
+
+        $createTableSql = $connection->fetchNumeric("SHOW CREATE TABLE {$migrationTableName}")[1] ?? null;
+        self::assertIsString($createTableSql);
+        self::assertStringContainsString($expectedDefinition, $createTableSql);
+        self::assertSame($row, $connection->fetchAssociative("SELECT * FROM {$migrationTableName}"));
+    }
+
+    /**
+     * @return iterable<string, array{string, string, array<string, string>}>
+     */
+    public static function provideMySqlCustomizedFinishedAtColumns(): iterable
+    {
+        yield 'datetime with fractional seconds and comment' => [
+            "DATETIME(6) NOT NULL COMMENT 'when done'",
+            "`finished_at` datetime(6) DEFAULT NULL COMMENT 'when done'",
+            ['version' => 'v1', 'phase' => 'before', 'started_at' => '2023-01-01 00:00:00.123456', 'finished_at' => '2023-01-01 00:00:01.654321'],
+        ];
+
+        yield 'timestamp with expression default' => [
+            'TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)',
+            '`finished_at` timestamp(3) NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)',
+            ['version' => 'v1', 'phase' => 'before', 'started_at' => '2023-01-01 00:00:00.123456', 'finished_at' => '2023-01-01 00:00:01.654'],
+        ];
     }
 
     public function testEnsureMigrationTableUpToDateThrowsWithoutFinishedAtColumn(): void
