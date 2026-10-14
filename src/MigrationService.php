@@ -276,13 +276,6 @@ class MigrationService
             ));
         }
 
-        if (!$table->hasColumn('finished_at')) {
-            throw new MigrationTableNotInitializedException($migrationTableName, sprintf(
-                'Migration table "%s" has no finished_at column. Check that it is a migration table of this library.',
-                $migrationTableName,
-            ));
-        }
-
         return $this->upgradeMigrationTable($table);
     }
 
@@ -396,7 +389,7 @@ class MigrationService
         Table $currentTable,
     ): MigrationTableState
     {
-        if (!$currentTable->hasColumn('finished_at') || !$currentTable->getColumn('finished_at')->getNotnull()) {
+        if (!$currentTable->getColumn('finished_at')->getNotnull()) {
             return MigrationTableState::AlreadyUpToDate;
         }
 

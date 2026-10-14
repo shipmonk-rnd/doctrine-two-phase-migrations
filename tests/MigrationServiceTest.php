@@ -3,6 +3,7 @@
 namespace ShipMonk\Doctrine\Migration;
 
 use Doctrine\DBAL\Platforms\SQLitePlatform;
+use Doctrine\DBAL\Schema\Exception\ColumnDoesNotExist;
 use Doctrine\ORM\EntityManagerInterface;
 use LogicException;
 use PHPUnit\Framework\TestCase;
@@ -453,25 +454,34 @@ class MigrationServiceTest extends TestCase
         self::assertSame(MigrationTableState::AlreadyUpToDate, $service->ensureMigrationTableUpToDate());
     }
 
-    public function testEnsureMigrationTableUpToDateThrowsWhenFinishedAtColumnMissing(): void
+    public function testEnsureMigrationTableUpToDateThrowsWithoutFinishedAtColumn(): void
+    {
+        $service = $this->createServiceWithTableWithoutFinishedAtColumn();
+
+        $this->expectException(ColumnDoesNotExist::class);
+        $service->ensureMigrationTableUpToDate();
+    }
+
+    public function testInitializeMigrationTableThrowsWithoutFinishedAtColumn(): void
+    {
+        $service = $this->createServiceWithTableWithoutFinishedAtColumn();
+
+        $this->expectException(ColumnDoesNotExist::class);
+        $service->initializeMigrationTable();
+    }
+
+    private function createServiceWithTableWithoutFinishedAtColumn(): MigrationService
     {
         [$entityManager] = $this->createEntityManagerAndLogger();
         $service = $this->createMigrationService($entityManager);
-        $connection = $entityManager->getConnection();
         $migrationTableName = $service->getConfig()->getMigrationTableName();
 
-        // table exists but has no finished_at column at all
-        $connection->executeStatement(
+        $entityManager->getConnection()->executeStatement(
             "CREATE TABLE {$migrationTableName} (version VARCHAR(20) NOT NULL, phase VARCHAR(10) NOT NULL, "
                 . 'started_at VARCHAR(30) NOT NULL, PRIMARY KEY (version, phase))',
         );
 
-        try {
-            $service->ensureMigrationTableUpToDate();
-            self::fail('Expected MigrationTableNotInitializedException');
-        } catch (MigrationTableNotInitializedException $e) {
-            self::assertStringContainsString('has no finished_at column', $e->getMessage());
-        }
+        return $service;
     }
 
     public function testReadsHonorCustomMigrationTableName(): void
