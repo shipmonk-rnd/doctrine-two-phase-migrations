@@ -5,7 +5,7 @@ namespace ShipMonk\Doctrine\Migration;
 use RuntimeException;
 
 /**
- * Thrown when the migration table is missing. The remedy is to run the migration:init command.
+ * Thrown when the migration table is missing (run the migration:init command) or is not a migration table of this library.
  *
  * @api
  */

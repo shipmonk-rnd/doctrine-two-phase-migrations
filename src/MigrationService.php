@@ -392,6 +392,15 @@ class MigrationService
         Table $currentTable,
     ): MigrationTableState
     {
+        $migrationTableName = $this->config->getMigrationTableName();
+
+        if (!$currentTable->hasColumn('finished_at')) {
+            throw new MigrationTableNotInitializedException($migrationTableName, sprintf(
+                'Migration table "%s" has no finished_at column. Check that it is a migration table of this library.',
+                $migrationTableName,
+            ));
+        }
+
         if (!$currentTable->getColumn('finished_at')->getNotnull()) {
             return MigrationTableState::AlreadyUpToDate;
         }

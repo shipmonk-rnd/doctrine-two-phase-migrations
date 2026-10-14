@@ -4,7 +4,6 @@ namespace ShipMonk\Doctrine\Migration;
 
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
-use Doctrine\DBAL\Schema\Exception\ColumnDoesNotExist;
 use Doctrine\ORM\EntityManagerInterface;
 use LogicException;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -513,7 +512,8 @@ class MigrationServiceTest extends TestCase
     {
         $service = $this->createServiceWithTableWithoutFinishedAtColumn();
 
-        $this->expectException(ColumnDoesNotExist::class);
+        $this->expectException(MigrationTableNotInitializedException::class);
+        $this->expectExceptionMessage('has no finished_at column');
         $service->ensureMigrationTableUpToDate();
     }
 
@@ -521,7 +521,8 @@ class MigrationServiceTest extends TestCase
     {
         $service = $this->createServiceWithTableWithoutFinishedAtColumn();
 
-        $this->expectException(ColumnDoesNotExist::class);
+        $this->expectException(MigrationTableNotInitializedException::class);
+        $this->expectExceptionMessage('has no finished_at column');
         $service->initializeMigrationTable();
     }
 
