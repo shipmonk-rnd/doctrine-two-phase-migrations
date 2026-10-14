@@ -84,7 +84,7 @@ services:
 #### Initialization:
 
 After installation, you need to create `migration` table in your database. It is safe to run it even when the table was already initialized.
-When upgrading from `1.x`, running it once also upgrades the existing table to the new schema (it makes `finished_at` nullable, see [Concurrency & execution safety](#concurrency--execution-safety)). Only that single column is altered, so it is safe to run against a populated table.
+When upgrading from `0.7.x` or older, running it once also upgrades the existing table to the new schema (it makes `finished_at` nullable, see [Concurrency & execution safety](#concurrency--execution-safety)). Only that single column is altered, so it is safe to run against a populated table.
 
 ```bash
 $ bin/console migration:init
