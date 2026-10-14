@@ -5,7 +5,6 @@ namespace ShipMonk\Doctrine\Migration;
 use DateTimeImmutable;
 use DirectoryIterator;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Schema\ComparatorConfig;
 use Doctrine\DBAL\Schema\Exception\TableDoesNotExist;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
@@ -25,8 +24,6 @@ use function file_put_contents;
 use function implode;
 use function is_string;
 use function ksort;
-use function preg_match;
-use function preg_replace;
 use function sprintf;
 use function str_replace;
 use function strpos;
@@ -405,16 +402,6 @@ class MigrationService
             return MigrationTableState::AlreadyUpToDate;
         }
 
-        if ($this->connection->getDatabasePlatform() instanceof AbstractMySQLPlatform) {
-            $this->connection->executeStatement(sprintf(
-                'ALTER TABLE %s MODIFY %s',
-                $this->getQuotedMigrationTableName(),
-                $this->getMySqlNullableFinishedAtDefinition(),
-            ));
-
-            return MigrationTableState::Upgraded;
-        }
-
         $schemaManager = $this->connection->createSchemaManager();
 
         $desiredTable = clone $currentTable;
@@ -430,22 +417,6 @@ class MigrationService
         $schemaManager->alterTable($tableDiff);
 
         return MigrationTableState::Upgraded;
-    }
-
-    /**
-     * MySQL can change nullability only by restating the whole column definition. DBAL cannot restate it
-     * losslessly (it drops the fractional seconds precision of DATETIME(6), turns TIMESTAMP into DATETIME
-     * and quotes expression defaults), so the definition is taken from SHOW CREATE TABLE as is.
-     */
-    private function getMySqlNullableFinishedAtDefinition(): string
-    {
-        $createTableSql = $this->connection->fetchNumeric('SHOW CREATE TABLE ' . $this->getQuotedMigrationTableName())[1] ?? null;
-
-        if (!is_string($createTableSql) || preg_match('~^\s*([`"]finished_at[`"] .+?),?$~m', $createTableSql, $matches) !== 1) {
-            throw new LogicException('Cannot find the finished_at column definition in SHOW CREATE TABLE output');
-        }
-
-        return preg_replace('~ NOT NULL\b~', ' NULL', $matches[1], 1) ?? throw new LogicException('Cannot make finished_at nullable');
     }
 
     /**
