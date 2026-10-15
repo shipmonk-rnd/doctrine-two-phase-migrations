@@ -394,7 +394,7 @@ class MigrationServiceTest extends TestCase
         self::assertSame(MigrationTableState::Upgraded, $service->initializeMigrationTable());
         self::assertSame(MigrationTableState::AlreadyUpToDate, $service->initializeMigrationTable());
 
-        $service->assertMigrationTableUpToDate();
+        self::assertSame(MigrationTableState::AlreadyUpToDate, $service->ensureMigrationTableUpToDate());
     }
 
     public function testMigrationTableIsCreatedDespiteSchemaAssetsFilter(): void
@@ -410,16 +410,16 @@ class MigrationServiceTest extends TestCase
         self::assertSame(MigrationTableState::Created, $service->initializeMigrationTable());
         self::assertSame(MigrationTableState::AlreadyUpToDate, $service->initializeMigrationTable());
 
-        $service->assertMigrationTableUpToDate();
+        self::assertSame(MigrationTableState::AlreadyUpToDate, $service->ensureMigrationTableUpToDate());
     }
 
-    public function testAssertMigrationTableUpToDateThrowsWhenTableMissing(): void
+    public function testEnsureMigrationTableUpToDateThrowsWhenTableMissing(): void
     {
         [$entityManager] = $this->createEntityManagerAndLogger();
         $service = $this->createMigrationService($entityManager);
 
         try {
-            $service->assertMigrationTableUpToDate();
+            $service->ensureMigrationTableUpToDate();
             self::fail('Expected MigrationTableNotInitializedException');
         } catch (MigrationTableNotInitializedException $e) {
             self::assertSame('migration', $e->tableName);
@@ -427,51 +427,62 @@ class MigrationServiceTest extends TestCase
         }
     }
 
-    public function testAssertMigrationTableUpToDateThrowsOnOutdatedSchema(): void
+    public function testEnsureMigrationTableUpToDateUpgradesOutdatedSchema(): void
     {
         [$entityManager] = $this->createEntityManagerAndLogger();
         $service = $this->createMigrationService($entityManager);
         $connection = $entityManager->getConnection();
         $migrationTableName = $service->getConfig()->getMigrationTableName();
 
-        // pre-2.0 schema with finished_at NOT NULL
+        // pre-0.8 schema with finished_at NOT NULL
         $connection->executeStatement(
             "CREATE TABLE {$migrationTableName} (version VARCHAR(20) NOT NULL, phase VARCHAR(10) NOT NULL, "
                 . 'started_at VARCHAR(30) NOT NULL, finished_at VARCHAR(30) NOT NULL, PRIMARY KEY (version, phase))',
         );
+        $connection->insert($migrationTableName, [
+            'version' => 'v1',
+            'phase' => 'before',
+            'started_at' => '2023-01-01 00:00:00.000000',
+            'finished_at' => '2023-01-01 00:00:01.000000',
+        ]);
 
-        try {
-            $service->assertMigrationTableUpToDate();
-            self::fail('Expected MigrationTableNotInitializedException');
-        } catch (MigrationTableNotInitializedException $e) {
-            self::assertStringContainsString('out of date', $e->getMessage());
-        }
+        self::assertSame(MigrationTableState::Upgraded, $service->ensureMigrationTableUpToDate());
+        self::assertFalse($connection->createSchemaManager()->introspectTable($migrationTableName)->getColumn('finished_at')->getNotnull());
+        self::assertSame(['v1' => 'v1'], $service->getExecutedVersions(MigrationPhase::BEFORE));
 
-        // after init upgrades the schema, the assertion passes
-        $service->initializeMigrationTable();
-        $service->assertMigrationTableUpToDate();
+        self::assertSame(MigrationTableState::AlreadyUpToDate, $service->ensureMigrationTableUpToDate());
     }
 
-    public function testAssertMigrationTableUpToDateThrowsWhenFinishedAtColumnMissing(): void
+    public function testEnsureMigrationTableUpToDateThrowsWithoutFinishedAtColumn(): void
+    {
+        $service = $this->createServiceWithTableWithoutFinishedAtColumn();
+
+        $this->expectException(MigrationTableNotInitializedException::class);
+        $this->expectExceptionMessage('has no finished_at column');
+        $service->ensureMigrationTableUpToDate();
+    }
+
+    public function testInitializeMigrationTableThrowsWithoutFinishedAtColumn(): void
+    {
+        $service = $this->createServiceWithTableWithoutFinishedAtColumn();
+
+        $this->expectException(MigrationTableNotInitializedException::class);
+        $this->expectExceptionMessage('has no finished_at column');
+        $service->initializeMigrationTable();
+    }
+
+    private function createServiceWithTableWithoutFinishedAtColumn(): MigrationService
     {
         [$entityManager] = $this->createEntityManagerAndLogger();
         $service = $this->createMigrationService($entityManager);
-        $connection = $entityManager->getConnection();
         $migrationTableName = $service->getConfig()->getMigrationTableName();
 
-        // table exists but has no finished_at column at all
-        $connection->executeStatement(
+        $entityManager->getConnection()->executeStatement(
             "CREATE TABLE {$migrationTableName} (version VARCHAR(20) NOT NULL, phase VARCHAR(10) NOT NULL, "
                 . 'started_at VARCHAR(30) NOT NULL, PRIMARY KEY (version, phase))',
         );
 
-        try {
-            $service->assertMigrationTableUpToDate();
-            self::fail('Expected MigrationTableNotInitializedException');
-        } catch (MigrationTableNotInitializedException $e) {
-            self::assertStringContainsString('out of date', $e->getMessage());
-            self::assertStringContainsString('migration:init', $e->getMessage());
-        }
+        return $service;
     }
 
     public function testReadsHonorCustomMigrationTableName(): void

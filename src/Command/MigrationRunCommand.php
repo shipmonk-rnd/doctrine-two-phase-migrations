@@ -9,6 +9,7 @@ use ShipMonk\Doctrine\Migration\MigrationLockException;
 use ShipMonk\Doctrine\Migration\MigrationPhase;
 use ShipMonk\Doctrine\Migration\MigrationService;
 use ShipMonk\Doctrine\Migration\MigrationTableNotInitializedException;
+use ShipMonk\Doctrine\Migration\MigrationTableState;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -87,7 +88,12 @@ class MigrationRunCommand extends Command
         }
 
         try {
-            $this->migrationService->assertMigrationTableUpToDate();
+            if ($this->migrationService->ensureMigrationTableUpToDate() === MigrationTableState::Upgraded) {
+                $logger->notice('Migration table {migrationTableName} upgraded to the current schema (finished_at is now nullable)', [
+                    'migrationTableName' => $this->migrationService->getConfig()->getMigrationTableName(),
+                ]);
+            }
+
             $this->migrationService->assertNoIncompleteMigrations();
 
             $migratedSomething = $this->executeMigrations($logger, $phases);

@@ -257,12 +257,14 @@ class MigrationService
 
     /**
      * Ensures the migration table exists and uses the current schema (finished_at nullable).
-     * Guards against running migrations after a library upgrade where migration:init was not re-run,
-     * which would otherwise fail with a cryptic NOT NULL constraint violation.
+     * An existing table from an older library version is upgraded in place, so a library upgrade
+     * needs no extra migration:init step. A missing table is never created here: it usually means
+     * a wrong database, and running every migration from scratch there would be harmful.
      *
+     * @phpstan-impure
      * @throws MigrationTableNotInitializedException
      */
-    public function assertMigrationTableUpToDate(): void
+    public function ensureMigrationTableUpToDate(): MigrationTableState
     {
         $migrationTableName = $this->config->getMigrationTableName();
         $table = $this->findMigrationTable();
@@ -274,13 +276,7 @@ class MigrationService
             ));
         }
 
-        if (!$table->hasColumn('finished_at') || $table->getColumn('finished_at')->getNotnull()) {
-            throw new MigrationTableNotInitializedException($migrationTableName, sprintf(
-                'Migration table "%s" schema is out of date (the finished_at column must exist and be nullable). '
-                    . 'Run the migration:init command to upgrade it before running migrations.',
-                $migrationTableName,
-            ));
-        }
+        return $this->upgradeMigrationTable($table);
     }
 
     /**
@@ -354,6 +350,8 @@ class MigrationService
 
     /**
      * Creates the migration table when missing, or idempotently upgrades it when present. Safe to run repeatedly.
+     *
+     * @phpstan-impure
      */
     public function initializeMigrationTable(): MigrationTableState
     {
@@ -391,7 +389,16 @@ class MigrationService
         Table $currentTable,
     ): MigrationTableState
     {
-        if (!$currentTable->hasColumn('finished_at') || !$currentTable->getColumn('finished_at')->getNotnull()) {
+        $migrationTableName = $this->config->getMigrationTableName();
+
+        if (!$currentTable->hasColumn('finished_at')) {
+            throw new MigrationTableNotInitializedException($migrationTableName, sprintf(
+                'Migration table "%s" has no finished_at column. Check that it is a migration table of this library.',
+                $migrationTableName,
+            ));
+        }
+
+        if (!$currentTable->getColumn('finished_at')->getNotnull()) {
             return MigrationTableState::AlreadyUpToDate;
         }
 

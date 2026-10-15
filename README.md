@@ -84,7 +84,7 @@ services:
 #### Initialization:
 
 After installation, you need to create `migration` table in your database. It is safe to run it even when the table was already initialized.
-When upgrading from `0.7.x` or older, running it once also upgrades the existing table to the new schema (it makes `finished_at` nullable, see [Concurrency & execution safety](#concurrency--execution-safety)). Only that single column is altered, so it is safe to run against a populated table.
+When upgrading from `0.7.x` or older, you do not need to run it again: `migration:run` upgrades the existing table to the new schema before it runs migrations (it makes `finished_at` nullable, see [Concurrency & execution safety](#concurrency--execution-safety)). Only that single column is altered, so it is safe on a populated table.
 
 ```bash
 $ bin/console migration:init
@@ -249,7 +249,7 @@ To recover, inspect the database to determine what the interrupted migration act
 - delete the row to re-run the migration from scratch (only safe if nothing was applied or the migration is idempotent), or
 - set its `finished_at` to mark it as completed (if you verified everything was applied or finished it by hand).
 
-`migration:run` exit codes: `0` success, `1` unfinished migration found (manual resolution required), `2` lock could not be acquired, `3` migration table missing or not upgraded (run `migration:init`). `migration:check` also reports unfinished migrations (and adds `8` to its exit code bitmask).
+`migration:run` exit codes: `0` success, `1` unfinished migration found (manual resolution required), `2` lock could not be acquired, `3` migration table missing (run `migration:init`). `migration:check` also reports unfinished migrations (and adds `8` to its exit code bitmask).
 
 ### Advanced usage
 
