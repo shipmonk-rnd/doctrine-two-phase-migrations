@@ -15,13 +15,13 @@
     "require-dev": {
         "doctrine/annotations": "^2.0.0",
         "editorconfig-checker/editorconfig-checker": "^10.7.0",
-        "ergebnis/composer-normalize": "^2.47.0",
         "phpstan/phpstan": "^2.1.32",
         "phpstan/phpstan-phpunit": "^2.0.6",
         "phpstan/phpstan-strict-rules": "^2.0.4",
         "phpunit/phpunit": "^10.5.62",
         "shipmonk/coding-standard": "^0.2.0",
         "shipmonk/composer-dependency-analyser": "^1.8.3",
+        "shipmonk/composer-normalizer": "^0.1.0",
         "shipmonk/dead-code-detector": "^1.0",
         "shipmonk/phpstan-rules": "^4.1.2",
         "symfony/config": "^6.4 || ^7.0 || ^8.0",
@@ -47,7 +47,6 @@
     "config": {
         "allow-plugins": {
             "dealerdirect/phpcodesniffer-composer-installer": true,
-            "ergebnis/composer-normalize": true,
             "ocramius/package-versions": true
         },
         "sort-packages": true
@@ -61,12 +60,17 @@
             "@check:tests",
             "@check:dependencies"
         ],
-        "check:composer": "composer normalize --dry-run --no-check-lock --no-update-lock",
+        "check:composer": "composer-normalizer --dry-run",
         "check:cs": "phpcs",
         "check:dependencies": "composer-dependency-analyser",
         "check:ec": "ec src",
         "check:tests": "phpunit tests",
         "check:types": "phpstan analyse -vv",
+        "fix": [
+            "@fix:composer",
+            "@fix:cs"
+        ],
+        "fix:composer": "composer-normalizer",
         "fix:cs": "phpcbf"
     }
 }
